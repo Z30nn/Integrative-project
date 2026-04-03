@@ -56,65 +56,25 @@ Route::post('/submit-guest-info', [GuestController::class, 'store']);
 
 Route::post('/services/submit', [ServiceController::class, 'submit'])->name('services.submit');
 
-// ── Protected Admin/Cashier Routes ──────────────────────────────────────
-Route::middleware(['auth', 'roletype:admin,cashier'])->group(function () {
+Route::delete('/guest/{id}', [GuestController::class, 'destroy'])->name('guest.destroy');
+Route::delete('/room/{id}', [RoomController::class, 'destroy'])->name('room.destroy');
 
-    // Guest management
-    Route::put('/guest/{id}/{booking_id}', [GuestController::class, 'update'])->name('guest.update');
-    Route::delete('/guest/{id}', [GuestController::class, 'destroy'])->name('guest.destroy');
+Route::post('/mark-as-paid/{id}/{booking_id}', [ServiceController::class, 'markAsPaid'])->name('mark.as.paid');
+Route::delete('/service/{service_id}', [ServiceController::class, 'destroy'])->name('service.destroy');
+Route::post('/refund/{id}', [ServiceController::class, 'refund'])->name('service.refund');
 
-    // Room management
-    Route::get('/room/{id}/edit', [RoomController::class, 'edit'])->name('room.edit');
-    Route::put('/room/{id}', [RoomController::class, 'update'])->name('room.update');
-    Route::post('/rooms', [RoomController::class, 'store'])->name('room.store');
-    Route::delete('/room/{id}', [RoomController::class, 'destroy'])->name('room.destroy');
+Route::put('/service-update/{id}', [ServiceController::class, 'update'])->name('service.update');
+Route::delete('/service-delete/{id}', [ServiceController::class, 'delete'])->name('service.delete');
 
-    // Service management
-    Route::post('/mark-as-paid/{id}/{booking_id}', [ServiceController::class, 'markAsPaid'])->name('mark.as.paid');
-    Route::delete('/service/{service_id}', [ServiceController::class, 'destroy'])->name('service.destroy');
-    Route::post('/refund/{id}', [ServiceController::class, 'refund'])->name('service.refund');
-    Route::put('/service-update/{id}', [ServiceController::class, 'update'])->name('service.update');
-    Route::delete('/service-delete/{id}', [ServiceController::class, 'delete'])->name('service.delete');
 
-    // Room service
-    Route::post('create-room-service', [RoomServiceController::class,'createRoomService'])->name('room.create');
+Route::put('/guest/{id}/{booking_id}', [GuestController::class, 'update'])->name('guest.update');
+Route::delete('/guest/{id}', [GuestController::class, 'destroy'])->name('guest.destroy');
 
-    // Stats API for real-time updates
-    Route::get('/api/dashboard-stats', function() {
-        $availedIncome = AvailedService::where('payment_status', 'paid')->sum('total_price');
-        $trackerIncome = IncomeTracker::sum('price');
-        $totalIncome = max($trackerIncome, $availedIncome);
+Route::get('/room/{id}/edit', [RoomController::class, 'edit'])->name('room.edit');
+Route::put('/room/{id}', [RoomController::class, 'update'])->name('room.update');
+Route::post('/rooms', [RoomController::class, 'store'])->name('room.store');
 
-        return response()->json([
-            'totalTransactions' => AvailedService::count(),
-            'pendingPayments' => AvailedService::where('payment_status', 'pending')->count(),
-            'paidToday' => AvailedService::where('payment_status', 'paid')
-                                        ->whereDate('updated_at', \Carbon\Carbon::today())
-                                        ->count(),
-            'totalIncome' => $totalIncome
-        ]);
-    })->name('api.stats');
-
-    // Revenue Analytics API
-    Route::get('/api/revenue-chart', function() {
-        $labels = [];
-        $data = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = \Carbon\Carbon::today()->subDays($i);
-            $labels[] = $date->format('M d');
-            
-            // Sum from both sources for robustness during transition
-            $dailyTracker = IncomeTracker::whereDate('created_at', $date)->sum('price');
-            $dailyAvailed = AvailedService::where('payment_status', 'paid')
-                                        ->whereDate('updated_at', $date)
-                                        ->sum('total_price');
-            
-            $data[] = max($dailyTracker, $dailyAvailed);
-        }
-        return response()->json(['labels' => $labels, 'data' => $data]);
-    })->name('api.revenue.chart');
-});
-
+Route::post('create-room-service', [RoomServiceController::class,'createRoomService'])->name('room.create');
 // Admin-specific routes
 Route::get('/admin', function(Request $request) {
    
@@ -133,28 +93,14 @@ Route::get('/admin', function(Request $request) {
     })->paginate(10);
 
     $totalGuestPayments = IncomeTracker::sum('price');
+    $incomeTracker = IncomeTracker::paginate(10);
     $roomServices = Service::all();
-
-    // Get room types that are currently booked (check_out is today or future)
-    $bookedRoomTypes = Guest::where('check_out', '>=', now()->toDateString())
-        ->pluck('booked_rooms')
-        ->flatMap(fn($rooms) => collect(explode(',', $rooms))->map(fn($r) => trim($r)))
-        ->filter()
-        ->unique()
-        ->toArray();
-
-    return view('categories.admincit301_laraviel_suite', compact('rooms', 'guests', 'totalRooms', 'totalGuests', 'totalGuestPayments', 'roomServices', 'bookedRoomTypes'));
+    return view('categories.admincit301_laraviel_suite', compact('rooms', 'guests', 'totalRooms', 'totalGuests', 'totalGuestPayments', 'incomeTracker', 'roomServices'));
 })->middleware(['auth', 'verified', 'roletype:admin'])->name('admin');
 
 Route::get('/cashier', function (Request $request) {
     $search = $request->input('booking_id'); // Input for search
     $paymentStatus = $request->input('payment_status'); // Input for payment status
-
-    $totalTransactions = AvailedService::count();
-    $pendingPayments = AvailedService::where('payment_status', 'pending')->count();
-    $paidToday = AvailedService::where('payment_status', 'paid')
-                                ->whereDate('updated_at', \Carbon\Carbon::today())
-                                ->count();
 
     $availed_services = AvailedService::when($search, function ($query, $search) {
         return $query->where('booking_id', 'like', "%{$search}%")
@@ -165,10 +111,9 @@ Route::get('/cashier', function (Request $request) {
     })
     ->paginate(5);
 
-    $incomeTracker = IncomeTracker::orderBy('created_at', 'desc')->paginate(10);
-    $totalIncome = max(IncomeTracker::sum('price'), AvailedService::where('payment_status', 'paid')->sum('total_price'));
+    $incomeTracker = IncomeTracker::paginate(10);
 
-    return view('categories.cashier', compact('availed_services', 'incomeTracker', 'totalTransactions', 'pendingPayments', 'paidToday', 'totalIncome'));
+    return view('categories.cashier', compact('availed_services', 'incomeTracker'));
 })->middleware(['auth', 'verified', 'roletype:cashier'])->name('cashier');
 
 Route::middleware('auth')->group(function () {

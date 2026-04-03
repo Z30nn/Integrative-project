@@ -32,9 +32,9 @@ class RegisteredUserController extends Controller
         // Validate the incoming request
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'string', 'in:super_admin,admin,cashier,guest'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'role' => ['string', 'max:255'],  // assuming you're passing role
+            'password' => ['required', 'string', 'min:6'], // Validate password as a string
         ]);
 
         // Create the user with booking ID stored in password
@@ -51,7 +51,7 @@ class RegisteredUserController extends Controller
             Auth::login($user);
 
         // Redirect based on the role
-        if ($user->role == 'super_admin' || $user->role == 'admin') {
+        if ($user->role == 'admin') {
             return redirect(route('admin', absolute: false));
         } elseif ($user->role == 'cashier') {
             return redirect(route('cashier', absolute: false));

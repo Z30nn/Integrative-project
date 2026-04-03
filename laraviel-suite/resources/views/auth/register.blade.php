@@ -121,48 +121,30 @@
             <div class="text-danger mt-1">{{ $errors->first('name') }}</div>
         </div>
 
-                    <!-- Role Selection -->
-                    <div class="col-md-12">
-                        <label for="role" class="form-label">System Role</label>
-                        <select id="role" name="role" class="form-select" required>
-                            <option value="" disabled selected>Choose a level of access</option>
-                            <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Administrator</option>
-                            <option value="cashier" {{ old('role') == 'cashier' ? 'selected' : '' }}>Cashier</option>
-                        </select>
-                        @if($errors->has('role'))
-                            <div class="text-danger">{{ $errors->first('role') }}</div>
-                        @endif
-                    </div>
+        <!-- Email -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input id="email" type="email" name="email" class="form-control" value="{{ old('email') }}" required autocomplete="username">
+            <div class="text-danger mt-1">{{ $errors->first('email') }}</div>
+        </div>
 
-                    <!-- Password -->
-                    <div class="col-md-6">
-                        <label for="password" class="form-label">Security Password</label>
-                        <div class="input-group">
-                            <input id="password" type="password" name="password" class="form-control" 
-                                   placeholder="Min. 8 characters" required style="border-right: none;">
-                            <button class="btn" type="button" onclick="togglePass('password', this)" 
-                                    style="background: rgba(254, 243, 226, 0.04); border: 1px solid rgba(191, 167, 93, 0.15); border-left: none; color: var(--brand-cream);">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                        @if($errors->has('password'))
-                            <div class="text-danger">{{ $errors->first('password') }}</div>
-                        @endif
-                    </div>
+        <!-- Role Dropdown -->
+        <div class="mb-3">
+            <label for="role" class="form-label">Role</label>
+            <select id="role" name="role" class="form-select" required>
+                <option value="" disabled selected>Select Role</option>
+                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+                <option value="cashier" {{ old('role') == 'cashier' ? 'selected' : '' }}>Cashier</option>
+            </select>
+            <div class="text-danger mt-1">{{ $errors->first('role') }}</div>
+        </div>
 
-                    <!-- Confirm Password -->
-                    <div class="col-md-6">
-                        <label for="password_confirmation" class="form-label">Confirm Key</label>
-                        <div class="input-group">
-                            <input id="password_confirmation" type="password" name="password_confirmation" 
-                                   class="form-control" placeholder="Re-type password" required style="border-right: none;">
-                            <button class="btn" type="button" onclick="togglePass('password_confirmation', this)" 
-                                    style="background: rgba(254, 243, 226, 0.04); border: 1px solid rgba(191, 167, 93, 0.15); border-left: none; color: var(--brand-cream);">
-                                <i class="bi bi-eye-slash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Password -->
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input id="password" type="password" name="password" class="form-control" required autocomplete="new-password">
+            <div class="text-danger mt-1">{{ $errors->first('password') }}</div>
+        </div>
 
         <!-- Confirm Password -->
         <div class="mb-3">
@@ -178,20 +160,7 @@
         </div>
     </form>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function togglePass(fieldId, btn) {
-            const input = document.getElementById(fieldId);
-            const icon = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('bi-eye-slash', 'bi-eye');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('bi-eye', 'bi-eye-slash');
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

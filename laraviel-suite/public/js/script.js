@@ -1,96 +1,51 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-                    const roomHtml = `
-                    <div class="col-md-6 col-lg-4 mb-4" data-aos="fade-up">
-                        <div class="room-card">
-                            <div class="room-image-wrapper">
-                                <img src="/${room.image_path.replace(/^\//, '')}" alt="${room.room_type}" loading="lazy">
-                                <span class="room-badge">${room.room_type.split(' ')[0]}</span>
-                            </div>
-                            <div class="room-content">
-                                <h3 class="room-type">${room.room_type}</h3>
-                                <p class="room-description">${room.description.substring(0, 90)}...</p>
-                                
-                                <div class="room-price-row pt-3 mt-auto border-top border-gold border-opacity-10 d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="price-label">Per Night</span>
-                                        <span class="price-value">₱${parseFloat(room.price).toLocaleString()}</span>
-                                    </div>
-                                    <button class="btn btn-premium-solid btn-sm select-room-btn" 
-                                            data-id="${room.id}" 
-                                            data-type="${room.room_type}" 
-                                            data-price="${room.price}">
-                                        Select
-                                    </button>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <a href="#" class="small text-gold text-decoration-none aboreto" style="font-size: 0.6rem; letter-spacing: 2px;" data-bs-toggle="modal" data-bs-target="${modalTarget}">
-                                        View In-Suite Amenities
-                                    </a>
+    console.log(localStorage.getItem("bookingId"));
+    fetch("/rooms")
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(
+                    "Network response was not ok " + response.statusText
+                );
+            }
+            return response.json(); // Parse the JSON data from the response
+        })
+        .then((data) => {
+            const container = document.querySelector(".standard-room"); // Select the container
+            data.forEach((room) => {
+                // Get the actual price and room_price_id
+                const roomPrice = room.price; // Actual price
+                const roomPriceId = room.room_price_id; // Room Price ID
+                
+                const roomHtml = `
+                <div class="col-md-6 col-lg-4 col-sm-12">
+                    <div class="suite card">
+                        <img src="${room.image_path}" class="card-img-top w-369.33" alt="${room.room_type}">
+                        <div class="card-body">
+                            <h3 class="card-title">${room.room_type}</h3>
+                            <p class="card-text">${room.description}</p>
+                            <h4 class="suite-price mt-2">
+                                Php ${parseFloat(roomPrice).toFixed(2)}/per night
+                            </h4>
+                            <p class="room-price-id mt-2">Price ID: ${roomPriceId}</p> <!-- Display room price ID -->
+                            <div class="row text-center">
+                                <div class="col">
+                                    <a href="/book-now" class="card-book">BOOK NOW</a>
                                 </div>
                             </div>
                         </div>
-                    </div>`;
-                    container.insertAdjacentHTML("beforeend", roomHtml);
-                });
-
-                // Attach selection listeners
-                document.querySelectorAll(".select-room-btn").forEach(btn => {
-                    btn.addEventListener("click", function() {
-                        const roomId = this.dataset.id;
-                        
-                        // Redirect logic if on Accommodation page
-                        if (!document.getElementById("stepper")) {
-                            window.location.href = `/book-now?room_id=${roomId}`;
-                            return;
-                        }
-
-                        const roomType = this.dataset.type;
-                        const price = parseFloat(this.dataset.price);
-
-                        if (this.innerText === "Selected") {
-                            this.innerText = "Select";
-                            this.classList.replace("btn-light", "btn-premium-solid");
-                            selectedRooms = [];
-                        } else {
-                            // Deselect all others
-                            document.querySelectorAll(".select-room-btn").forEach(b => {
-                                b.innerText = "Select";
-                                b.classList.replace("btn-light", "btn-premium-solid");
-                            });
-                            // Select this one
-                            this.innerText = "Selected";
-                            this.classList.replace("btn-premium-solid", "btn-light");
-                            selectedRooms = [{ id: roomId, type: roomType, price: price }];
-                        }
-                        updateSummary();
-                    });
-                });
-
-                // Auto-select room from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const preselectRoomId = urlParams.get('room_id');
-                if (preselectRoomId && document.getElementById("stepper")) {
-                    const preselectBtn = document.querySelector(`.select-room-btn[data-id="${preselectRoomId}"]`);
-                    if (preselectBtn) {
-                        preselectBtn.click();
-                        // Jump to Step 2 to show their selection
-                        setTimeout(() => switchStep(2), 500); 
-                    }
-                }
-            })
-            .catch(err => {
-                console.error("Room fetch error:", err);
-                const loader = document.getElementById("loader");
-                if (loader) {
-                    loader.innerHTML = '<p class="text-gold small">An error occurred while curating our collection. Please refresh.</p>';
-                }
+                    </div>
+                </div>
+                `;
+                
+                // Append the generated HTML to the container
+                container.insertAdjacentHTML("beforeend", roomHtml);
             });
-    };
-
-    const updateSummary = () => {
-        const roomListElem = document.querySelector(".booked-rooms");
-        if(!roomListElem) return;
+            
+        })
+        .catch((error) => {
+            console.error("Error fetching rooms:", error);
+        });
 
     const monthNames = [
         "January",
@@ -140,31 +95,16 @@ document.addEventListener("DOMContentLoaded", function () {
         nextMonthDropdown.appendChild(option);
     }
 
-        totalPrice = selectedRooms.reduce((acc, r) => acc + (r.price * nights), 0);
-        
-        document.querySelectorAll(".totalPriceDisplay").forEach(display => {
-            display.textContent = `₱${totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        });
-    };
+    // Set the default selected option to the current month
+    currentMonthDropdown.value = currentMonth + 1;
+    nextMonthDropdown.value =
+        (currentMonth + 1) % 12 === 0 ? 1 : currentMonth + 2; // Set next month or wrap around to January
 
-    // ── Payment Form Toggle ────────────────────
-    const paymentMethodSelect = document.getElementById('paymentMethodSelect');
-    if (paymentMethodSelect) {
-        paymentMethodSelect.addEventListener('change', function(e) {
-            document.querySelectorAll('.payment-form').forEach(el => el.classList.add('d-none'));
-            if (e.target.value === 'over_the_counter') {
-                document.getElementById('counterPaymentForm').classList.remove('d-none');
-            }
-        });
-    }
-
-    // ── Step Navigation ────────────────────────
-    const switchStep = (step) => {
-        // Validation for step 1
-        if (step === 2 && (!checkInDate || !checkOutDate)) {
-            alert("Please select your Timeline first.");
-            return;
-        }
+    let dateSelectionStep = 0,
+        checkInDate = null,
+        checkOutDate = null,
+        checkInCell = null,
+        checkOutCell = null;
 
     function isValidDateSelection() {
         if (checkInDate && checkOutDate) {
@@ -175,97 +115,115 @@ document.addEventListener("DOMContentLoaded", function () {
         return false;
     }
 
-        // Validation for step 3
-        if (step === 4) {
-            const reqFields = ["firstname", "lastname", "email", "contactNumber", "address"];
-            const isComplete = reqFields.every(id => document.getElementById(id).value.trim() !== "");
-            if (!isComplete) {
-                alert("Please complete the Resident Profile.");
-                return;
+    function calculateNights(checkIn, checkOut) {
+        const checkInDateObject = new Date(checkIn),
+            checkOutDateObject = new Date(checkOut);
+        const nights = Math.ceil(
+            (checkOutDateObject - checkInDateObject) / (1000 * 60 * 60 * 24)
+        );
+        if (nights >= 0) {
+            document.querySelector(".nights").textContent = `${nights} nights`;
+            document.querySelector("#checkIndd").textContent = checkIn;
+            document.querySelector("#checkOutdd").textContent = checkOut;
+            document.querySelector("#totalNightsInput").value = nights;
+            return true;
+        }
+        alert("Check-out date should be after Check-in date!");
+        document.querySelector(".nights").textContent = "N/A";
+        dateSelectionStep = 0;
+        return false;
+    }
+        function generateCalendar(year, month, calendarId, titleId) {
+            if (month > 11) {
+                year += 1; // Increment year
+                month = 0; // Reset to January
             }
-        }
-
-        // Processing payment (transition from 4 to 5)
-        if (step === 5) {
-            // Show processing
-            const paymentForms = document.querySelectorAll(".payment-form");
-            paymentForms.forEach(el => el.classList.add("d-none"));
-            if(document.getElementById("paymentMethodSelect")) document.getElementById("paymentMethodSelect").classList.add("d-none");
-            const labels = document.querySelectorAll("#step-4-content label");
-            labels.forEach(el => el.classList.add("d-none"));
-            
-            const processingNode = document.getElementById("paymentProcessing");
-            if(processingNode) processingNode.classList.remove("d-none");
-            
-            const stepNav = document.getElementById("step-navigation");
-            if(stepNav) stepNav.classList.add("d-none");
-            
-            setTimeout(() => {
-                submitBooking();
-                renderSwitch(5);
-            }, 2000);
-            return;
-        }
-
-        renderSwitch(step);
-    };
-
-    const renderSwitch = (step) => {
-        currentStep = step;
-
-        for(let i=1; i<=5; i++) {
-            const content = document.getElementById(`step-${i}-content`);
-            if(content) content.classList.add("d-none");
-            
-            const indicator = document.getElementById(`step-${i}-indicator`);
-            if(indicator) indicator.classList.remove("active");
-        }
-
-        const activeContent = document.getElementById(`step-${currentStep}-content`);
-        if(activeContent) activeContent.classList.remove("d-none");
         
-        const activeIndicator = document.getElementById(`step-${currentStep}-indicator`);
-        if(activeIndicator) activeIndicator.classList.add("active");
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        const prevBtn = document.getElementById("prevBtn");
-        const nextBtn = document.getElementById("nextBtn");
+            const date = new Date(year, month),
+                daysInMonth = new Date(year, month + 1, 0).getDate(),
+                firstDay = new Date(year, month, 1).getDay();
         
-        if (prevBtn) {
-            if (currentStep === 1 || currentStep === 5) prevBtn.classList.add("d-none");
-            else prevBtn.classList.remove("d-none");
-        }
-
-        if (nextBtn) {
-            if (currentStep === 5) nextBtn.classList.add("d-none");
-            else if (currentStep === 4) nextBtn.innerText = "Confirm & Pay";
-            else nextBtn.innerText = "Continue Journey";
+            document.getElementById(titleId).textContent = `${date.toLocaleString(
+                "default",
+                { month: "long" }
+            )} ${year}`;
+        
+            let table = `<thead class="thead-dark">
+                            <tr>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                            </tr>
+                         </thead>
+                         <tbody><tr>`;
+            for (let i = 0; i < firstDay; i++) table += `<td></td>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const paddedDay = String(day).padStart(2, "0");
+                table += `<td><span class="clickable-day" data-date="${year}-${
+                    month + 1
+                }-${paddedDay}">${paddedDay}</span></td>`;
+                if ((day + firstDay) % 7 === 0) table += `</tr><tr>`;
+            }
+            table += `</tr></tbody>`;
+            document.getElementById(calendarId).innerHTML = table;
+        
+            // Add click event listeners
+            document
+                .querySelectorAll(`#${calendarId} .clickable-day`)
+                .forEach((day) => {
+                    day.addEventListener("click", function () {
+                        const selectedDate = this.getAttribute("data-date");
+                        const parentTd = this.parentElement;
+                        if (dateSelectionStep === 0) {
+                            checkInDate = selectedDate;
+                            document.querySelector(".check-in").textContent =
+                                checkInDate;
+                            checkInCell = parentTd;
+                            dateSelectionStep = 1;
+                            parentTd.classList.add("active-cell");
+                        } else {
+                            checkOutDate = selectedDate;
+                            document.querySelector(".check-out").textContent =
+                                checkOutDate;
+                            checkOutCell = parentTd;
+                            if (calculateNights(checkInDate, checkOutDate)) {
+                                dateSelectionStep = 0;
+                                document
+                                    .querySelectorAll(`#${calendarId} td`)
+                                    .forEach((cell) =>
+                                        cell.classList.remove("active-cell")
+                                    );
+                                checkInCell.classList.add("active-cell");
+                                checkOutCell.classList.add("active-cell");
+                                let currentDate = new Date(checkInDate),
+                                    checkOutDateObject = new Date(checkOutDate);
+                                while (currentDate <= checkOutDateObject) {
+                                    const dateString = `${currentDate.getFullYear()}-${
+                                        currentDate.getMonth() + 1
+                                    }-${String(currentDate.getDate()).padStart(2, "0")}`;
+                                    const dayElement = document.querySelector(
+                                        `.clickable-day[data-date="${dateString}"]`
+                                    );
+                                    if (dayElement)
+                                        dayElement.parentElement.classList.add(
+                                            "active-cell"
+                                        );
+                                    currentDate.setDate(currentDate.getDate() + 1);
+                                }
+                            } else {
+                                alert(
+                                    "Invalid date selection! Please select valid check-in and check-out dates."
+                                );
+                            }
+                        }
+                    });
+                });
         }
         
-        if(activeContent) {
-            anime({
-                targets: activeContent,
-                opacity: [0, 1],
-                translateY: [20, 0],
-                duration: 800,
-                easing: 'easeOutCubic'
-            });
-        }
-    };
-
-    if (document.getElementById("nextBtn")) {
-        document.getElementById("nextBtn").addEventListener("click", () => switchStep(currentStep + 1));
-    }
-    if (document.getElementById("prevBtn")) {
-        document.getElementById("prevBtn").addEventListener("click", () => switchStep(currentStep - 1));
-    }
-
-    // ── Calendar Core ──────────────────────────
-    function generateCalendar(year, month, calendarId, titleId) {
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDay = new Date(year, month, 1).getDay();
 
 
 
@@ -327,19 +285,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         const guestData = {
-            bookingId: Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
-            salutation: document.getElementById("salutation").value,
-            firstname: document.getElementById("firstname").value,
-            lastname: document.getElementById("lastname").value,
-            email: document.getElementById("email").value,
-            contactNumber: document.getElementById("contactNumber").value,
-            address: document.getElementById("address").value,
-            checkIn: checkInDate,
-            checkOut: checkOutDate,
-            bookedRooms: selectedRooms.map(r => r.type).join(", "),
-            priceTotal: totalPrice,
-            paymentMethod: 'over_the_counter',
-            paymentStatus: 'pending'
+            bookingId: bookingId || "", // Ensure bookingId is a string
+            lastname: document.getElementById("lastname")?.value.trim() || "",
+            firstname: document.getElementById("firstname")?.value.trim() || "",
+            salutation: document.getElementById("salutation")?.value || "",
+            birthdate: document.getElementById("birthdate")?.value || "",
+            gender: document.querySelector(".dropdown-toggle.gender")?.textContent.trim() || "",
+            guestCount: parseInt(document.getElementById("guestCount")?.value, 10) || 0,
+            discountOption: document.querySelector('input[name="discountOption"]:checked')?.value || "None",
+            email: document.getElementById("email")?.value.trim() || "",
+            contactNumber: document.getElementById("contactNumber")?.value.trim() || "",
+            address: document.getElementById("address")?.value.trim() || "",
+            checkIn: cin || "", // Ensure `cin` is a valid date string
+            checkOut: cout || "", // Ensure `cout` is a valid date string
+            bookedRooms: $(".booked-rooms").text().trim().replace(/(V\d+)/g, '$1,').trim(), // Convert array to comma-separated string
+                priceTotal: parseFloat(parseFloat($("span.totalPriceDisplay").text().replace("Php", "").trim()).toFixed(2)) || 0,
+                // Ensure this is a valid number
         };
         
         $(".greeting").text(

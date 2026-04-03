@@ -8,18 +8,6 @@
   <title>admin dashboard</title>
   <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      .chart-container {
-        background: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin-bottom: 2rem;
-      }
-    </style>
 </head>
 
 <body>
@@ -30,7 +18,7 @@
   <!-- Sidebar -->
   <div class="sidebar d-flex flex-column" id="mySidebar" style="height: 100vh;">
     <div class="text-center">
-      <img src="{{ asset('images/logo.png') }}" alt="LARAVEIL SUITES" style="width: 100px;">
+      <img src="./images/logo.png" alt="" style="width: 100px;">
     </div>
     <div>
       <a href="#dashboard" onclick="setActive(this)">Dashboard</a>
@@ -61,15 +49,19 @@
   <div class="content">
     <!-- Dashboard Section -->
     <section id="dashboard">
-      <h1><i class="bi bi-speedometer2"></i> Executive Dashboard</h1>
+      <h1>Dashboard<br /></h1>
       <div class="dashboard-container">
         <div class="card">
-          <h3><i class="bi bi-people"></i> Total Customers</h3>
-          <p id="stat-total-guests">{{ $totalGuests }}</p>
+          <h3>Total Customers</h3>
+          <p>{{ $totalGuests }}</p>
         </div>
         <div class="card">
           <h3>Total Rooms</h3>
           <p>{{ $totalRooms }}</p>
+        </div>
+        <div class="card">
+          <h3>Total Income</h3>
+          <p>Php {{ number_format($totalGuestPayments, 2) }}</p>
         </div>
       </div>
     </section>
@@ -77,35 +69,9 @@
     <!-- Customer Section -->
     <section id="customer" class="container my-4">
       <h2 class="mb-3">Customer Information</h2>
-      @if($errors->any())
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <strong><i class="bi bi-exclamation-triangle-fill"></i> Validation Error:</strong>
-        <ul class="mb-0 mt-2">
-          @foreach($errors->all() as $error)
-            <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      @endif
-
-      @if(session('error'))
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-x-circle-fill me-2"></i> {{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      @endif
-
       @if(session('guestAlert'))
       <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> {{ session('guestAlert') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-      @endif
-
-      @if(session('success'))
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+        {{ session('guestAlert') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
       @endif
@@ -163,7 +129,7 @@
 
                 <!-- Delete Button -->
                 <form
-                  action="{{ route('guest.destroy', $guest->id) }}"
+                  action="{{ route('guest.destroy', $guest->id ?? 1) }}"
                   method="POST"
                   onsubmit="return confirm('Are you sure you want to delete this guest?')">
                   @csrf
@@ -189,14 +155,128 @@
       </div>
     </section>
 
+    <!-- Edit Modal -->
+    <!-- Edit Modal -->
+    @foreach($guests as $guest)
+    <div class="modal fade" id="editModal-{{ $guest->id }}" tabindex="-1" aria-labelledby="editModalLabel-{{ $guest->id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editModalLabel-{{ $guest->id }}">Edit Guest Information</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="{{ route('guest.update', ['id' => $guest->id, 'booking_id' => $guest->booking_id]) }}" method="POST">
+              @csrf
+              @method('PUT')
+              <div class="row g-3">
+                <!-- Guest Details -->
+                <div class="col-md-6">
+                  <label for="lastname-{{ $guest->id }}" class="form-label">Last Name</label>
+                  <input type="text" class="form-control" id="lastname-{{ $guest->id }}" name="lastname" value="{{ $guest->lastname }}" required>
+                </div>
 
+                <div class="col-md-6">
+                  <label for="contact_number-{{ $guest->id }}" class="form-label">Contact Number</label>
+                  <input type="text" class="form-control" id="contact_number-{{ $guest->id }}" name="contact_number" value="{{ $guest->contact_number }}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="email-{{ $guest->id }}" class="form-label">Email</label>
+                  <input type="email" class="form-control" id="email-{{ $guest->id }}" name="email" value="{{ $guest->email }}" required>
+                </div>
+
+                <!-- Room Type Fields -->
+                @foreach (['Standard', 'Deluxe', 'Luxury'] as $roomType)
+    @foreach (['V1', 'V2', 'V3'] as $subtype)
+        @php
+            $key = "{$roomType} {$subtype}";
+            $roomCounts = collect(explode(',', $guest->booked_rooms ?? ''))->countBy();
+            $roomCount = $roomCounts[$key] ?? 0;
+        @endphp
+        <div class="col-md-4">
+            <label for="{{ strtolower($roomType) }}-{{ strtolower($subtype) }}-{{ $guest->id }}" class="form-label">
+                {{ $roomType }} {{ $subtype }}
+            </label>
+            <input
+                type="number"
+                class="form-control roomTypeGuestEdit"
+                id="{{ strtolower($roomType) }}-{{ strtolower($subtype) }}-{{ $guest->id }}"
+                name="{{ strtolower($roomType) }}_{{ strtolower($subtype) }}"
+                value="{{ $roomCount }}"
+                min="0"
+                required>
+        </div>
+    @endforeach
+@endforeach
+
+<div class="col-md-12">
+    <label class="form-label">Discount Options</label>
+    <div class="btn-group" role="group" aria-label="Discount Options">
+        <input 
+            type="radio" 
+            class="btn-check" 
+            name="discount_options" 
+            id="none-{{ $guest->id }}" 
+            value="none" 
+            {{ $guest->discount_option === 'none' ? 'checked' : '' }}
+            required>
+        <label class="btn btn-outline-primary" for="none-{{ $guest->id }}">None</label>
+
+        <input 
+            type="radio" 
+            class="btn-check" 
+            name="discount_options" 
+            id="student-{{ $guest->id }}" 
+            value="student" 
+            {{ $guest->discount_option === 'student' ? 'checked' : '' }}
+            required>
+        <label class="btn btn-outline-primary" for="student-{{ $guest->id }}">Student</label>
+
+        <input 
+            type="radio" 
+            class="btn-check" 
+            name="discount_options" 
+            id="senior-{{ $guest->id }}" 
+            value="senior" 
+            {{ $guest->discount_option === 'senior' ? 'checked' : '' }}
+            required>
+        <label class="btn btn-outline-primary" for="senior-{{ $guest->id }}">Senior</label>
+    </div>
+</div>
+                <!-- Check-in and Check-out Dates -->
+                <div class="col-md-6">
+                  <label for="check_in-{{ $guest->id }}" class="form-label">Check-in Date</label>
+                  <input type="date" class="form-control cin" id="check_in-{{ $guest->id }}" name="check_in" value="{{ $guest->check_in }}" required>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="check_out-{{ $guest->id }}" class="form-label">Check-out Date</label>
+                  <input type="date" class="form-control cout" id="check_out-{{ $guest->id }}" name="check_out" value="{{ $guest->check_out }}" required>
+                </div>
+
+                <div class="col-md-12">
+                  <label for="price_total-{{ $guest->id }}" class="form-label">Total Price</label>
+                  <input type="text" class="form-control tprice" id="price_total-{{ $guest->id }}" name="price_total" value="{{ $guest->price_total }}">
+                </div>
+              </div>
+
+              <div class="mt-3 text-end">
+                <button type="submit" class="btn btn-primary">Update Guest</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    @endforeach
 
     <section id="room-service" class="p-4 rounded-4 shadow my-2">
       <div class="container-fluid">
         <h2>Room Service</h2>
-        @if (session('success') || session('approved'))
+        @if (session('approved'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <p class=" text-start">{{ session('success') ?? session('approved') }}</p>
+          <p class=" text-start">{{ session('approved') }}</p>
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         @endif
@@ -225,7 +305,7 @@
                     <i class="bi bi-pencil-fill"></i> Edit
                   </button>
                   <!-- Delete Button -->
-                  <form action="{{ route('service.delete', $roomService->service_id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this service?')">
+                  <form action="{{ route('service.delete', $roomService->service_id) }}" method="POST">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger">
@@ -242,9 +322,7 @@
             @endforelse
           </tbody>
         </table>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomServiceModal">
-          <i class="bi bi-plus-lg me-1"></i> Add Room Service
-        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoomServiceModal">Add Room Service</button>
       </div>
     </section>
 
@@ -315,10 +393,7 @@
                 <label for="availed_service" class="form-label">Available Services</label>
                 <input type="text" class="form-control" id="availed_service" name="availed_service" required>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Add Room Service</button>
-              </div>
+              <button type="submit" class="btn btn-primary">Add Room Service</button>
             </form>
           </div>
         </div>
@@ -369,13 +444,8 @@
             @foreach($rooms as $room)
             <div class="col-md-6 col-lg-4 col-sm-12 mb-4">
               <div class="room d-flex flex-column text-center" style="height: 100%; display: flex; flex-direction: column;">
-                <img src="{{ asset(ltrim($room->image_path, '/')) }}" alt="{{ $room->room_type }}" class="img-fluid mb-3" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+                <img src="{{ $room->image_path }}" alt="Room Image" class="img-fluid mb-3">
                 <h4>{{ $room->room_type }}</h4>
-                @if(in_array($room->room_type, $bookedRoomTypes ?? []))
-                  <span class="badge bg-danger mb-2"><i class="bi bi-lock-fill"></i> Booked</span>
-                @else
-                  <span class="badge bg-success mb-2"><i class="bi bi-check-circle-fill"></i> Available</span>
-                @endif
                 <p>Description: {{ $room->description }}</p>
                 <p>Price: Php {{ number_format($room->price->price ?? 0, 2) }}</p>
 
@@ -429,26 +499,23 @@
               <option value="Luxury V3">Luxury v3</option>
             </select>
           </div>
-          <div class="mb-3">
-            <label for="price-id-add" class="form-label">Price ID</label>
-            <input type="text" class="form-control" id="price-id-add" name="priceId" readonly>
-          </div>
+          <input type="text" class="form-control" id="price-id" name="priceId" readonly>
           <!-- Room Price -->
           <div class="mb-3">
-            <label for="roomPrice-add" class="form-label">Price</label>
-            <input type="number" class="form-control" id="roomPrice-add" name="price" readonly>
+            <label for="roomPrice" class="form-label">Price</label>
+            <input type="number" class="form-control" id="roomPrice" name="price" readonly>
           </div>
 
           <!-- Room description -->
           <div class="mb-3">
-            <label for="roomDescription-add" class="form-label">Description</label>
-            <input type="text" class="form-control" id="roomDescription-add" name="description" required>
+            <label for="roomDescription" class="form-label">Description</label>
+            <input type="text" class="form-control" id="roomDescription" name="description" required>
           </div>
 
           <!-- Room Image -->
           <div class="mb-3">
-            <label for="roomImage-add" class="form-label">Room Image</label>
-            <input type="file" class="form-control" id="roomImage-add" name="image" accept="image/*" required>
+            <label for="roomImage" class="form-label">Room Image</label>
+            <input type="file" class="form-control" id="roomImage" name="image" accept="image/*" required>
           </div>
         </div>
 
@@ -474,8 +541,7 @@
             @method('PUT')
             <div class="modal-body">
               <div class="mb-3">
-                <label for="roomTypeEdit-{{ $room->id }}" class="form-label">Room Type</label>
-                <select class="form-select roomTypeEdit" id="roomTypeEdit-{{ $room->id }}" name="room_type" required>
+                <select class="form-select roomTypeEdit" id="roomTypeEdit" name="room_type" required>
                   <option value="Standard V1" {{$room->room_type == 'Standard V1' ? 'selected' : ''}}>Standard v1</option>
                   <option value="Standard V2" {{$room->room_type == 'Standard V2' ? 'selected' : ''}}>Standard v2</option>
                   <option value="Standard V3" {{$room->room_type == 'Standard V3' ? 'selected' : ''}}>Standard v3</option>
@@ -488,22 +554,19 @@
               </select>
 
               </div>
-              <div class="mb-3">
-                <label for="price-id-{{ $room->id }}" class="form-label">Price ID</label>
-                <input type="text" class="form-control" id="price-id-{{ $room->id }}" name="priceId" readonly value="{{$room->room_price_id}}">
-              </div>
+              <input type="text" class="form-control" id="price-id" name="priceId" readonly value="{{$room->room_price_id}}">
 
               <div class="mb-3">
-                <label for="roomDescription-{{ $room->id }}" class="form-label">Description</label>
-                <textarea class="form-control" id="roomDescription-{{ $room->id }}" name="description" rows="3" required>{{ $room->description }}</textarea>
+                <label for="roomDescription" class="form-label">Description</label>
+                <textarea class="form-control" id="roomDescription" name="description" rows="3" required>{{ $room->description }}</textarea>
               </div>
               <div class="mb-3">
-                <label for="roomPrice-{{ $room->id }}" class="form-label">Price</label>
-                <input type="number" class="form-control" id="roomPrice-{{ $room->id }}" name="price" value="{{ $room->price->price ?? 0 }}" readonly>
+                <label for="roomPrice" class="form-label">Price</label>
+                <input type="number" class="form-control" id="roomPrice" name="price" value="{{ $room->price }}" readonly>
               </div>
               <div class="mb-3">
-                <label for="roomImage-{{ $room->id }}" class="form-label">Image</label>
-                <input type="file" class="form-control" id="roomImage-{{ $room->id }}" name="image">
+                <label for="roomImage" class="form-label">Image</label>
+                <input type="file" class="form-control" id="roomImage" name="image">
               </div>
             </div>
             <div class="modal-footer">
@@ -548,330 +611,239 @@
 
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>  <script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+
+  <script>
     function toggleSidebar() {
-      const sidebar = document.getElementById("mySidebar");
-      if (sidebar) sidebar.classList.toggle("responsive");
-    }
+        const sidebar = document.getElementById("mySidebar");
+        sidebar.classList.toggle("responsive");
+      }
 
-    // Initialize Charts
-    let adminRevenueChart;
-    let occupancyChart;
 
-    async function refreshDashboard() {
-      try {
-        const statsRes = await fetch('{{ route("api.stats") }}');
-        if (!statsRes.ok) return;
-        const stats = await statsRes.json();
-        const statEl = document.getElementById('stat-total-guests');
-        if (statEl) statEl.textContent = stats.totalGuests || {{ $totalGuests }};
-      } catch (e) { console.error("Admin Update failed", e); }
-    }
 
-    let roomPrices = {};
+      let roomValues = {};
+document.querySelectorAll('.roomTypeGuestEdit').forEach(input => {
+    roomValues[input.id] = parseInt(input.value, 10) || 0;
+});
 
-    const fetchRoomPrices = async () => {
-      try {
+let roomPrices = {};
+
+const fetchRoomPrices = async () => {
+    try {
         const response = await fetch('/api/room-prices');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
+        
+        // Populate the roomPrices object
         data.forEach(room => {
-          roomPrices[room.room_type] = parseFloat(room.price);
+            roomPrices[room.room_type] = parseFloat(room.price);
         });
-        console.log('Room prices fetched:', roomPrices);
-      } catch (error) {
-        console.error('Error fetching room prices:', error);
-      }
-    };
 
-    function fetchRoomPriceForEdit(roomType, priceInput, priceIdInput) {
-      if (!roomType) return;
-      fetch(`/api/room-prices/${roomType}`)
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.price && priceInput) priceInput.value = data.price;
-          if (data && data.id && priceIdInput) priceIdInput.value = data.id;
-        })
-        .catch(error => console.error('Error fetching room price:', error));
+        console.log('Room prices fetched:', roomPrices);
+    } catch (error) {
+        console.error('Error fetching room prices:', error);
+    }
+};
+
+// Call the function when the page loads
+
+      
+    document.addEventListener('DOMContentLoaded', () => {
+
+      fetchRoomPrices();
+
+    // Function to calculate total price
+    // Attach event listener to all radio buttons in the discount group
+document.querySelectorAll('input[name="discount_options"]').forEach((radioButton) => {
+    radioButton.addEventListener('change', function() {
+        // Call the function to recalculate the total price for the selected guest
+        const guestId = this.id.split('-')[1];  // Extract guestId from radio button ID
+        calculateTotalPrice(guestId); // Recalculate the price on discount change
+    });
+});
+
+const calculateTotalPrice = (guestId) => {
+    let totalPrice = 0;
+    
+    // Get the selected discount option
+    const discountType = document.querySelector(`input[name="discount_options"]:checked`);
+    
+    // Get check-in and check-out dates
+    const checkInDate = document.querySelector(`#check_in-${guestId}`).value;
+    const checkOutDate = document.querySelector(`#check_out-${guestId}`).value;
+
+    // Calculate number of days
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+
+    // Calculate the time difference in milliseconds, then convert it to days
+    const timeDifference = checkOut - checkIn;
+    const days = Math.max(1, timeDifference / (1000 * 60 * 60 * 24)); // Ensure at least 1 day
+
+    // Validate the days value (it should be > 0)
+    if (days <= 0) {
+        console.error("Invalid number of days.");
+        return;
     }
 
-    const calculateTotalPrice = (guestId) => {
-      const modal = document.getElementById(`editModal-${guestId}`);
-      if (!modal) return;
+    // Calculate room price based on room types and counts
+    
 
-      let totalPrice = 0;
-      const discountType = modal.querySelector(`input[name="discount_options"]:checked`);
-      const cinInput = modal.querySelector(`#check_in-${guestId}`);
-      const coutInput = modal.querySelector(`#check_out-${guestId}`);
-      const totalPriceField = modal.querySelector(`#price_total-${guestId}`);
-
-      if (!cinInput || !coutInput) return;
-
-      const checkIn = new Date(cinInput.value);
-      const checkOut = new Date(coutInput.value);
-
-      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return;
-
-      const delta = checkOut - checkIn;
-      const days = Math.max(1, Math.ceil(delta / (1000 * 60 * 60 * 24)));
-
-      modal.querySelectorAll('.roomTypeGuestEdit').forEach(input => {
-        const roomTypeLabel = input.previousElementSibling;
-        const roomType = roomTypeLabel ? roomTypeLabel.textContent.trim() : "";
-        const roomCount = parseInt(input.value, 10) || 0;
-        const roomPrice = roomPrices[roomType] || 0;
-        totalPrice += roomCount * roomPrice * days;
-      });
-
-      if (discountType && ["student", "senior"].includes(discountType.value)) {
-        totalPrice *= 0.8;
-      }
-      
-      totalPrice += 1500; // Base fee or additional charge
-      if (totalPriceField) totalPriceField.value = totalPrice.toFixed(2);
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log("Admin Dashboard JS Initializing...");
-      
-      // 1. Initial sync
-      refreshDashboard();
-      setInterval(refreshDashboard, 30000);
-
-      // 2. Fetch room prices (non-blocking)
-      fetchRoomPrices().then(() => {
-        console.log("Prices loaded, updating open modals...");
-        document.querySelectorAll('.modal.show').forEach(modal => {
-          const guestId = modal.id.split('-')[1];
-          if (guestId) calculateTotalPrice(guestId);
-        });
-      }).catch(e => console.warn("Background price fetch failed", e));
-
-      // 3. Attach Guest Edit listeners
-      document.querySelectorAll('.modal[id^="editModal-"]').forEach(modal => {
+    // Attach event listeners for inputs
+    document.querySelectorAll('.modal').forEach(modal => {
         const guestId = modal.id.split('-')[1];
+
+        // Recalculate when room counts, discount, or dates change
         modal.addEventListener('input', (event) => {
-          if (
-            event.target.classList.contains('roomTypeGuestEdit') ||
-            event.target.name === 'discount_options' ||
-            event.target.classList.contains('cin') ||
-            event.target.classList.contains('cout') ||
-            event.target.id.includes('check_in') ||
-            event.target.id.includes('check_out')
-          ) {
-            calculateTotalPrice(guestId);
-          }
+            if (
+                event.target.classList.contains('roomTypeGuestEdit') ||
+                event.target.name === 'discount_options' ||
+                event.target.classList.contains('cin') ||
+                event.target.classList.contains('cout')
+            ) {
+                calculateTotalPrice(guestId);
+            }
         });
-      });
-
-      // 4. Attach Room Management listeners
-      const addRoomTypeSelect = document.getElementById('roomType');
-      if (addRoomTypeSelect) {
-        addRoomTypeSelect.addEventListener('change', function () {
-          const container = this.closest('.modal-body');
-          if (container) {
-            fetchRoomPriceForEdit(this.value, container.querySelector('input[name="price"]'), container.querySelector('input[name="priceId"]'));
-          }
-        });
-      }
-
-      document.querySelectorAll('.roomTypeEdit').forEach((dropdown) => {
-        dropdown.addEventListener('change', function () {
-          const container = this.closest('.modal-body');
-          if (container) {
-            fetchRoomPriceForEdit(this.value, container.querySelector('input[name="price"]'), container.querySelector('input[name="priceId"]'));
-          }
-        });
-      });
-
-      // Selection Sync on show
-      document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('show.bs.modal', function() {
-          const roomTypeSelect = this.querySelector('select[name="room_type"]');
-          const priceInput = this.querySelector('input[name="price"]');
-          const priceIdInput = this.querySelector('input[name="priceId"]');
-          if (roomTypeSelect && priceInput && priceIdInput && !priceInput.value) {
-            fetchRoomPriceForEdit(roomTypeSelect.value, priceInput, priceIdInput);
-          }
-        });
-      });
     });
 
-    function setActive(link) {
-      const links = document.querySelectorAll(".sidebar a");
-      links.forEach(l => l.classList.remove("active"));
-      link.classList.add("active");
+document.querySelectorAll(`#editModal-${guestId} .roomTypeGuestEdit`).forEach(input => {
+        const roomType = input.previousElementSibling.textContent.trim(); // e.g. "Standard V1"
+        const roomCount = parseInt(input.value, 10) || 0; // Get the count of rooms (default to 0)
+        
+        // Get the room price from the roomPrices object (assuming it's defined elsewhere)
+        const roomPrice = roomPrices[roomType] || 0; // If room type doesn't exist, set the price to 0
+        
+        // Add the price for the selected room type and count
+        totalPrice += roomCount * roomPrice * days;
+    });
+
+    // Apply discount if applicable (20% off for student or senior)
+    if (discountType && ["student", "senior"].includes(discountType.value)) {
+        totalPrice *= 0.8; // Apply 20% discount
     }
 
-    // Calendar functions
-    let currentDate = new Date();
+    // Add an additional 1500 (or 15,000 depending on your requirement)
+    totalPrice += 1500; // Update this if necessary (it could be a fixed fee or additional charges)
 
-    function changeMonth(direction) {
-      currentDate.setMonth(currentDate.getMonth() + direction);
-      renderCalendar();
-    }
+    // Update the total price input field (assumes this exists in the form)
+    const totalPriceField = document.querySelector(`#price_total-${guestId}`);
+    totalPriceField.value = totalPrice.toFixed(2);
+};
+      // Global constants
+      document.getElementById('roomType').addEventListener('change', function () {
+    const roomType = this.value;
+    const container = this.closest('.modal-body');
 
-    function renderCalendar() {
-      const monthYear = document.getElementById("month-year");
-      if (!monthYear) return;
-      monthYear.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+    // Fetch elements within the same container
+    const priceInput = container.querySelector('input[name="price"]');
+    const priceIdInput = container.querySelector('input[name="priceId"]');
 
-      const daysContainer = document.getElementById("calendarDays");
-      if (!daysContainer) return;
-      daysContainer.innerHTML = "";
+    fetchRoomPrice(roomType, priceInput, priceIdInput);
+  });
 
-      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      const totalDays = lastDay.getDate();
-      const startingDay = firstDay.getDay();
+  function fetchRoomPrices1(roomType) {
+    console.log("Fetching room prices for room type:", roomType);
+  }
 
-      // Empty slots for alignment
-      for (let i = 0; i < startingDay; i++) {
-        const emptyDiv = document.createElement("div");
-        emptyDiv.classList.add("calendar-day", "empty");
-        daysContainer.appendChild(emptyDiv);
+  function fetchRoomPrice(roomType, priceInput, priceIdInput) {
+  // Fetch room price from the server based on room type
+  fetch(`/api/room-prices/${roomType}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.price) {
+        console.log(roomType);
+        priceInput.value = data.price; // Set price in the input field
+        priceIdInput.value = data.id; // Set price ID
+      }
+    })
+    .catch(error => console.error('Error fetching room price:', error));
+}
+
+  document.querySelectorAll('.roomTypeEdit').forEach((dropdown) => {
+    dropdown.addEventListener('change', function () {
+        // Get the value of the selected option
+        const selectedValue = this.value;
+
+        // Log the selected value or take action
+        console.log("Selected Room Type: ", selectedValue);
+
+        const container = this.closest('.modal-body');
+
+    // Fetch elements within the same container
+    const priceInput = container.querySelector('input[name="price"]');
+    const priceIdInput = container.querySelector('input[name="priceId"]');
+
+    fetchRoomPrice(selectedValue, priceInput, priceIdInput);
+    });
+});
+
+      
+
+      // Active link setting
+      function setActive(link) {
+        const links = document.querySelectorAll(".sidebar a");
+        links.forEach(link => link.classList.remove("active"));
+        link.classList.add("active");
       }
 
-      // Calendar days
-      for (let i = 1; i <= totalDays; i++) {
-        const dayDiv = document.createElement("div");
-        dayDiv.classList.add("calendar-day");
-        dayDiv.textContent = i;
+      // Calendar functions
+      let currentDate = new Date();
 
-        if (i === new Date().getDate() && currentDate.getMonth() === new Date().getMonth()) {
-          dayDiv.classList.add("current-day");
+      function changeMonth(direction) {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+        renderCalendar();
+      }
+
+      function renderCalendar() {
+        const monthYear = document.getElementById("month-year");
+        monthYear.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+
+        const daysContainer = document.getElementById("calendarDays");
+        daysContainer.innerHTML = "";
+
+        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const totalDays = lastDay.getDate();
+        const startingDay = firstDay.getDay();
+
+        // Empty slots for alignment
+        for (let i = 0; i < startingDay; i++) {
+          const emptyDiv = document.createElement("div");
+          emptyDiv.classList.add("calendar-day", "empty");
+          daysContainer.appendChild(emptyDiv);
         }
 
-        dayDiv.onclick = function() {
-          if (this.classList.contains("active-day")) {
-            this.classList.remove("active-day");
-            if (typeof hideBookings === 'function') hideBookings();
-          } else {
-            document.querySelectorAll(".calendar-day").forEach(day => day.classList.remove("active-day"));
-            this.classList.add("active-day");
-            if (typeof showCustomerBookings === 'function') showCustomerBookings(i);
+        // Calendar days
+        for (let i = 1; i <= totalDays; i++) {
+          const dayDiv = document.createElement("div");
+          dayDiv.classList.add("calendar-day");
+          dayDiv.textContent = i;
+
+          if (i === new Date().getDate() && currentDate.getMonth() === new Date().getMonth()) {
+            dayDiv.classList.add("current-day");
           }
-        };
 
-        daysContainer.appendChild(dayDiv);
+          dayDiv.onclick = function() {
+            if (this.classList.contains("active-day")) {
+              this.classList.remove("active-day");
+              hideBookings();
+            } else {
+              document.querySelectorAll(".calendar-day").forEach(day => day.classList.remove("active-day"));
+              this.classList.add("active-day");
+              showCustomerBookings(i);
+            }
+          };
+
+          daysContainer.appendChild(dayDiv);
+        }
       }
-    }
 
-    // Initial render
-    document.addEventListener('DOMContentLoaded', () => {
       renderCalendar();
     });
   </script>
 
-  <!-- Edit Modals (Inner Body placement for valid HTML) -->
-  @foreach($guests as $guest)
-  <div class="modal fade" id="editModal-{{ $guest->id }}" tabindex="-1" aria-labelledby="editModalLabel-{{ $guest->id }}" aria-hidden="true" style="z-index: 2000;">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="editModalLabel-{{ $guest->id }}">
-            <i class="bi bi-pencil-square me-2"></i>Edit Guest Information ({{ $guest->booking_id }})
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(1); opacity: 1;"></button>
-        </div>
-        <div class="modal-body">
-          <form action="{{ route('guest.update', ['id' => $guest->id, 'booking_id' => $guest->booking_id]) }}" method="POST">
-            @csrf
-            @method('PUT')
-            <div class="row g-4">
-              <!-- Guest Details -->
-              <div class="col-md-6">
-                <label for="firstname-{{ $guest->id }}" class="form-label">First Name</label>
-                <input type="text" class="form-control" id="firstname-{{ $guest->id }}" name="firstname" value="{{ $guest->firstname }}" required>
-              </div>
-              <div class="col-md-6">
-                <label for="lastname-{{ $guest->id }}" class="form-label">Last Name</label>
-                <input type="text" class="form-control" id="lastname-{{ $guest->id }}" name="lastname" value="{{ $guest->lastname }}" required>
-              </div>
-
-              <div class="col-md-6">
-                <label for="contact_number-{{ $guest->id }}" class="form-label">Contact Number</label>
-                <input type="text" class="form-control" id="contact_number-{{ $guest->id }}" name="contact_number" value="{{ $guest->contact_number }}" required>
-              </div>
-
-              <div class="col-md-6">
-                <label for="email-{{ $guest->id }}" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email-{{ $guest->id }}" name="email" value="{{ $guest->email }}" required>
-              </div>
-
-              <!-- Room Type Fields -->
-              <div class="col-md-12">
-                <h6 class="text-gold mb-3 border-bottom border-light pb-2"><i class="bi bi-door-open me-2"></i>Room Counts</h6>
-                <div class="row g-3">
-                  @foreach (['Standard', 'Deluxe', 'Luxury'] as $roomType)
-                    @foreach (['V1', 'V2', 'V3'] as $subtype)
-                      @php
-                          $key = "{$roomType} {$subtype}";
-                          $roomCounts = collect(explode(',', $guest->booked_rooms ?? ''))->countBy();
-                          $roomCount = $roomCounts[$key] ?? 0;
-                      @endphp
-                      <div class="col-md-4">
-                          <label for="{{ strtolower($roomType) }}-{{ strtolower($subtype) }}-{{ $guest->id }}" class="form-label small">
-                              {{ $roomType }} {{ $subtype }}
-                          </label>
-                          <input
-                              type="number"
-                              class="form-control form-control-sm roomTypeGuestEdit"
-                              id="{{ strtolower($roomType) }}-{{ strtolower($subtype) }}-{{ $guest->id }}"
-                              name="{{ strtolower($roomType) }}_{{ strtolower($subtype) }}"
-                              value="{{ $roomCount }}"
-                              min="0">
-                      </div>
-                    @endforeach
-                  @endforeach
-                </div>
-              </div>
-
-              <div class="col-md-12">
-                  <label class="form-label">Discount Options</label>
-                  <div class="btn-group w-100" role="group">
-                      <input type="radio" class="btn-check" name="discount_options" id="none-{{ $guest->id }}" value="none" {{ $guest->discount_option === 'none' ? 'checked' : '' }} required>
-                      <label class="btn btn-outline-primary" for="none-{{ $guest->id }}">None</label>
-
-                      <input type="radio" class="btn-check" name="discount_options" id="student-{{ $guest->id }}" value="student" {{ $guest->discount_option === 'student' ? 'checked' : '' }} required>
-                      <label class="btn btn-outline-primary" for="student-{{ $guest->id }}">Student</label>
-
-                      <input type="radio" class="btn-check" name="discount_options" id="senior-{{ $guest->id }}" value="senior" {{ $guest->discount_option === 'senior' ? 'checked' : '' }} required>
-                      <label class="btn btn-outline-primary" for="senior-{{ $guest->id }}">Senior</label>
-                  </div>
-              </div>
-
-              <div class="col-md-6">
-                <label for="check_in-{{ $guest->id }}" class="form-label">Check-in Date</label>
-                <input type="date" class="form-control" id="check_in-{{ $guest->id }}" name="check_in" value="{{ $guest->check_in }}" required>
-              </div>
-
-              <div class="col-md-6">
-                <label for="check_out-{{ $guest->id }}" class="form-label">Check-out Date</label>
-                <input type="date" class="form-control cout" id="check_out-{{ $guest->id }}" name="check_out" value="{{ $guest->check_out }}" required>
-              </div>
-
-              <div class="col-md-12">
-                <label for="price_total-{{ $guest->id }}" class="form-label">Total Price (₱)</label>
-                <input type="number" step="0.01" class="form-control bg-dark text-gold fw-bold" id="price_total-{{ $guest->id }}" name="price_total" value="{{ $guest->price_total }}" readonly>
-                <div class="form-text text-light opacity-75">Automatically calculated based on rooms and duration.</div>
-              </div>
-            </div>
-
-            <div class="mt-4 text-center">
-              <button type="submit" class="btn btn-primary px-5">
-                <i class="bi bi-save me-2"></i>Update Guest Record
-              </button>
-              <button type="button" class="btn btn-secondary ms-2" data-bs-dismiss="modal">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-  @endforeach
-
 </body>
-</html>
 
 </html>

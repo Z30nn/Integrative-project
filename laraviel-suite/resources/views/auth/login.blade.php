@@ -110,28 +110,29 @@
             <p>Welcome back! Please log in to your account.</p>
         </div>
 
-                <div class="field-group mb-4">
-                    <label for="password" class="form-label">Security Password</label>
-                    <div class="input-group">
-                        <input type="password" name="password" id="password" class="form-control"
-                               placeholder="••••••••" required style="border-right: none;">
-                        <button class="btn" type="button" onclick="togglePass('password', this)" 
-                                style="background: rgba(254, 243, 226, 0.04); border: 1px solid rgba(254, 243, 226, 0.12); border-left: none; color: var(--brand-cream);">
-                            <i class="bi bi-eye-slash"></i>
-                        </button>
-                    </div>
-                </div>
+        <!-- Email Address -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input id="email" type="email" name="email" class="form-control" value="{{ old('email') }}" required autofocus>
+            @if ($errors->has('email'))
+                <div class="text-danger mt-1">{{ $errors->first('email') }}</div>
+            @endif
+        </div>
 
-                <div class="meta-row">
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="forgot-link" style="margin-left: auto;">Forgot Access?</a>
-                    @endif
-                </div>
+        <!-- Password -->
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input id="password" type="password" name="password" class="form-control" required>
+            @if ($errors->has('password'))
+                <div class="text-danger mt-1">{{ $errors->first('password') }}</div>
+            @endif
+        </div>
 
-                <button type="submit" class="btn-premium" id="submitBtn">
-                    <span id="btnText">Log In</span>
-                </button>
-            </form>
+        <!-- Remember Me -->
+        <div class="form-check mb-4">
+            <input class="form-check-input" type="checkbox" id="remember_me" name="remember">
+            <label class="form-check-label" for="remember_me">Remember me</label>
+        </div>
 
         <!-- Actions -->
         <div class="d-flex justify-content-between align-items-center">
@@ -142,27 +143,7 @@
         </div>
     </form>
 
-    <script>
-        // Add loading state on submit
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const btn = document.getElementById('submitBtn');
-            const text = document.getElementById('btnText');
-            btn.classList.add('loading');
-            text.textContent = 'Verifying...';
-        });
-
-        function togglePass(fieldId, btn) {
-            const input = document.getElementById(fieldId);
-            const icon = btn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.classList.replace('bi-eye-slash', 'bi-eye');
-            } else {
-                input.type = 'password';
-                icon.classList.replace('bi-eye', 'bi-eye-slash');
-            }
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

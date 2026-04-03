@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Hash;
 use App\Mail\SendReceipt;  // Use your SendReceipt Mailable
 use App\Models\Feedback;
 use App\Models\User;
-use App\Models\AvailedService;
 
 class GuestController extends Controller
 {
@@ -48,7 +47,7 @@ class GuestController extends Controller
             'salutation' => 'nullable|string|max:50',
             'birthdate' => 'nullable|date',
             'gender' => 'nullable|string|max:10',
-            'guestCount' => 'nullable|integer',
+            'guestCount' => 'required|integer',
             'discountOption' => 'nullable|string',
             'email' => 'required|email',
             'contactNumber' => 'required|string|max:20',
@@ -56,28 +55,19 @@ class GuestController extends Controller
             'checkIn' => 'required|date',
             'checkOut' => 'required|date',
             'bookedRooms' => 'required|string',
-            'priceTotal' => 'required|numeric',
-            'paymentMethod' => 'nullable|string',
-            'paymentStatus' => 'nullable|string',
+            'priceTotal' => 'required|numeric   ',
         ]);
-
-        $rawPaymentMethod = $request->input('paymentMethod', 'over_the_counter');
-        // Map JS payment methods to DB-compatible values
-        $paymentMethod = ($rawPaymentMethod === 'over_the_counter') ? 'over_the_counter' : 'online_payment';
-        $paymentStatus = $request->input('paymentStatus', 'pending');
-        $guestCount = $request->input('guestCount', 1);
-        $discountOption = $request->input('discountOption');
 
         // Save the data into the database
         $guest = Guest::create([
             'booking_id' => $validatedData['bookingId'],
             'lastname' => $validatedData['lastname'],
             'firstname' => $validatedData['firstname'],
-            'salutation' => $validatedData['salutation'] ?? null,
-            'birthdate' => $validatedData['birthdate'] ?? null,
-            'gender' => $validatedData['gender'] ?? null,
-            'guest_count' => $guestCount,
-            'discount_option' => $discountOption,
+            'salutation' => $validatedData['salutation'],
+            'birthdate' => $validatedData['birthdate'],
+            'gender' => $validatedData['gender'],
+            'guest_count' => $validatedData['guestCount'],
+            'discount_option' => $validatedData['discountOption'],
             'email' => $validatedData['email'],
             'contact_number' => $validatedData['contactNumber'],
             'address' => $validatedData['address'],
@@ -85,37 +75,21 @@ class GuestController extends Controller
             'check_out' => $validatedData['checkOut'],
             'booked_rooms' => $validatedData['bookedRooms'],
             'price_total' => $validatedData['priceTotal'],
-            'payment_method' => $paymentMethod,
-            'payment_status' => $paymentStatus,
         ]);
 
-        AvailedService::create([
+        IncomeTracker::create([
+            'customer_name' => $validatedData['firstname'] . ' ' . $validatedData['lastname'],
+            'price' => $validatedData['priceTotal'],
+            'availed_service' => 'Booking Reservation',
             'booking_id' => $validatedData['bookingId'],
-            'guest_name' => $validatedData['firstname'] . ' ' . $validatedData['lastname'],
-            'service_id' => 0, // 0 for Room Booking
-            'service_date' => $validatedData['checkIn'],
-            'payment_method' => $paymentMethod,
-            'payment_status' => $paymentStatus,
-            'total_price' => $validatedData['priceTotal'],
         ]);
 
-        if ($paymentStatus === 'paid') {
-            IncomeTracker::create([
-                'customer_name' => $validatedData['firstname'] . ' ' . $validatedData['lastname'],
-                'price' => $validatedData['priceTotal'],
-                'availed_service' => 'Room Booking',
-                'booking_id' => $validatedData['bookingId'],
-            ]);
-        }
-
-        User::firstOrCreate(
-            ['email' => $validatedData['email']],
-            [
-                'name' => $validatedData['firstname'],
-                'role' => 'guest',
-                'password' => Hash::make($validatedData['bookingId']),
-            ]
-        );
+        User::create([
+            'name' => $validatedData['firstname'],
+            'email' => $validatedData['email'],
+            'role' => 'guest',
+            'password' => Hash::make($validatedData['bookingId']),
+        ]);
 
         session(['password' => $validatedData['bookingId']]);
         // Send the booking confirmation email using SendReceipt
@@ -148,22 +122,22 @@ class GuestController extends Controller
         $guest = Guest::findOrFail($id);
     
         // Validate input
-        $validatedData = $request->validate([
+        $request->validate([
             'lastname' => 'required|string|max:255',
-            'contact_number' => 'required|string|max:25',
+            'contact_number' => 'required|string|max:15',
             'email' => 'required|email',
             'check_in' => 'required|date',
             'check_out' => 'required|date',
-            'standard_v1' => 'nullable|integer|min:0',
-            'standard_v2' => 'nullable|integer|min:0',
-            'standard_v3' => 'nullable|integer|min:0',
-            'deluxe_v1' => 'nullable|integer|min:0',
-            'deluxe_v2' => 'nullable|integer|min:0',
-            'deluxe_v3' => 'nullable|integer|min:0',
-            'luxury_v1' => 'nullable|integer|min:0',
-            'luxury_v2' => 'nullable|integer|min:0',
-            'luxury_v3' => 'nullable|integer|min:0',
-            'price_total' => 'required|numeric',
+            // Room validations
+            'standard_v1' => 'required|integer|min:0',
+            'standard_v2' => 'required|integer|min:0',
+            'standard_v3' => 'required|integer|min:0',
+            'deluxe_v1' => 'required|integer|min:0',
+            'deluxe_v2' => 'required|integer|min:0',
+            'deluxe_v3' => 'required|integer|min:0',
+            'luxury_v1' => 'required|integer|min:0',
+            'luxury_v2' => 'required|integer|min:0',
+            'luxury_v3' => 'required|integer|min:0',
         ]);
     
         // Generate the booked rooms string
@@ -171,9 +145,9 @@ class GuestController extends Controller
         foreach (['Standard', 'Deluxe', 'Luxury'] as $roomType) {
             foreach (['v1', 'v2', 'v3'] as $subtype) {
                 $field = strtolower($roomType) . '_' . $subtype;
-                $count = $request->input($field, 0);
+                $count = $request->$field;
                 if ($count > 0) {
-                    $bookedRooms = array_merge($bookedRooms, array_fill(0, (int)$count, $roomType . ' ' . strtoupper($subtype)));
+                    $bookedRooms = array_merge($bookedRooms, array_fill(0, $count, $roomType . ' ' . strtoupper($subtype)));
                 }
             }
         }
@@ -182,39 +156,31 @@ class GuestController extends Controller
     
         // Update guest data
         $guest->update([
-            'lastname' => $validatedData['lastname'],
-            'contact_number' => $validatedData['contact_number'],
-            'email' => $validatedData['email'],
-            'discount_option' => $request->input('discount_options', $guest->discount_option),
+            'lastname' => $request->lastname,
+            'contact_number' => $request->contact_number,
+            'email' => $request->email,
+            'discount_option' => $request->discount_options,
             'booked_rooms' => $bookedRoomsString,
-            'check_in' => $validatedData['check_in'],
-            'check_out' => $validatedData['check_out'],
-            'price_total' => $validatedData['price_total'],
+            'check_in' => $request->check_in,
+            'check_out' => $request->check_out,
+            'price_total' => $request->price_total, // Ensure this is calculated as needed
         ]);
-    
-        // Update corresponding AvailedService (Room Booking entry)
-        $availedService = AvailedService::where('booking_id', $booking_id)
-            ->where('service_id', 0)
-            ->first();
-        if ($availedService) {
-            $availedService->update([
-                'total_price' => $validatedData['price_total'],
-            ]);
-        }
-    
-        // Update IncomeTracker record
+
+        // Find the corresponding IncomeTracker entry by booking_id
         $incomeTracker = IncomeTracker::where('booking_id', $booking_id)->first();
+    
         if ($incomeTracker) {
+            // Update the price in IncomeTracker based on the total price
             $incomeTracker->update([
-                'customer_name' => $validatedData['lastname'],
-                'price' => $validatedData['price_total'],
+                'price' => $request->price_total, // Assuming price_total is calculated and passed
             ]);
         } else {
+            // Optionally, you could create a new IncomeTracker entry if no match is found
             IncomeTracker::create([
-                'booking_id' => $booking_id,
-                'customer_name' => $validatedData['lastname'],
-                'availed_service' => 'Room Booking',
-                'price' => $validatedData['price_total'],
+                'booking_id' => $request->booking_id,
+                'customer_name' => $guest->lastname, // You can adjust this to match the required field
+                'availed_service' => 'Room Booking', // Adjust this as needed
+                'price' => $request->price_total,
             ]);
         }
     
@@ -225,21 +191,15 @@ class GuestController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id)
+    public function destroy(string $id)
     {
-        try {
-            $guest = Guest::findOrFail($id);
-            $bookingId = $guest->booking_id;
-            
-            // Clean up related history
-            AvailedService::where('booking_id', $bookingId)->delete();
-            IncomeTracker::where('booking_id', $bookingId)->delete();
-            Feedback::where('guest_id', $id)->delete();
-            
+        $guest = Guest::find($id);
+
+        if ($guest) {
             $guest->delete();
-            return redirect()->back()->with('guestAlert', 'Guest and related history deleted successfully');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Error deleting guest: ' . $e->getMessage());
+            return redirect()->back()->with('guestAlert', 'Guest deleted successfully');
         }
+
+        return redirect()->back()->with('error', 'Guest not found');
     }
 }
