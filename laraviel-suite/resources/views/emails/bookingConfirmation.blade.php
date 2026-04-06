@@ -3,88 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Confirmation</title>
+    <title>Booking Confirmation | LARAVEIL SUITES</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f7f7f7;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1a1410;
             margin: 0;
             padding: 0;
+            color: #f2e3d5;
         }
 
         .email-container {
-            width: 100%;
-            background-color: #ffffff;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #241c16;
+            border: 1px solid #d4af37;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
         }
 
         .email-header {
             text-align: center;
-            color: #333;
+            background-color: #1a1410;
+            padding: 30px;
+            border-bottom: 1px solid #d4af37;
         }
 
         .email-header h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+            font-size: 20px;
+            margin: 0;
+            color: #d4af37;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .email-content {
+            padding: 40px;
+            line-height: 1.8;
+            color: #e0d0c1;
+        }
+
+        .email-content h2 {
+            color: #d4af37;
+            font-size: 18px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 20px;
-            line-height: 1.6;
-            color: #555;
+        }
+
+        .details-table td {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        .details-table td:first-child {
+            font-weight: bold;
+            color: #d4af37;
+            width: 40%;
         }
 
         .footer {
-            margin-top: 40px;
+            background-color: #1a1410;
             text-align: center;
-            font-size: 14px;
+            padding: 20px;
+            font-size: 12px;
             color: #888;
+            border-top: 1px solid #d4af37;
         }
 
         .button {
+            display: block;
+            width: fit-content;
+            background-color: #d4af37;
+            color: #1a1410 !important;
+            padding: 12px 30px;
             text-decoration: none;
-            display: inline-block;
-            background-color: #007bff;
-            color: #fff;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
+            border-radius: 4px;
+            margin: 30px auto 0;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
         }
 
         .button:hover {
-            background-color: #0056b3;
+            background-color: #f1c94f;
         }
     </style>
 </head>
 <body>
     <div class="email-container">
         <div class="email-header">
-            <h1>Booking Confirmation</h1>
+            <h1>Laraveil Suites</h1>
         </div>
-        <p>Dear {{ $guest['firstname'] }} {{ $guest['lastname'] }},</p>
+        
         <div class="email-content">
-            <p>Thank you for booking with us! Here are your booking details:</p>
-            <ul>
-                <li><strong>Booking ID:</strong> {{ $guest['bookingId'] }}</li>
-                <li><strong>Check-in Date:</strong> {{ $guest['checkIn'] }}</li>
-                <li><strong>Check-out Date:</strong> {{ $guest['checkOut'] }}</li>
-                <li><strong>Booked Rooms:</strong> {{ $guest['bookedRooms'] }}</li>
-                <li><strong>Total Price:</strong> Php {{ $guest['priceTotal'] }}</li>
-            </ul>
-            <h2>Use this credentials to track your stay</h2>
-            <p>Email Address: {{ $guest['email'] }}</p>
-            <p>Password: {{ $guest['bookingId'] }}</p>
-            <p>If you have any questions, feel free to contact us!</p>
-            <a href="{{ env('APP_URL') . '/view-booking?bookingId=' . $guest['bookingId'] }}" class="button">View Booking</a>
+            <p>Dear {{ $guest['firstname'] }} {{ $guest['lastname'] }},</p>
+            <p>Thank you for choosing LARAVEIL SUITES. Your reservation has been successfully received. Below are the details of your stay.</p>
+            
+            <h2>Reservation Details</h2>
+            <table class="details-table">
+                <tr>
+                    <td>Booking ID</td>
+                    <td>{{ $guest['bookingId'] }}</td>
+                </tr>
+                <tr>
+                    <td>Check-in Date</td>
+                    <td>{{ $guest['checkIn'] }}</td>
+                </tr>
+                <tr>
+                    <td>Check-out Date</td>
+                    <td>{{ $guest['checkOut'] }}</td>
+                </tr>
+                <tr>
+                    <td>Reserved Suites</td>
+                    <td>{{ $guest['bookedRooms'] }}</td>
+                </tr>
+                <tr>
+                    <td>Total Investment</td>
+                    <td>₱{{ number_format($guest['priceTotal'], 2) }}</td>
+                </tr>
+            </table>
+
+            <h2>Guest Portal Access</h2>
+            <p>You can manage your reservation, view your balance, and explore room services through our exclusive Guest Portal using the credentials below:</p>
+            <table class="details-table">
+                <tr>
+                    <td>Email Address</td>
+                    <td>{{ $guest['email'] }}</td>
+                </tr>
+                <tr>
+                    <td>Secure Password</td>
+                    <td>{{ $guest['bookingId'] }}</td>
+                </tr>
+            </table>
+
+            <a href="{{ env('APP_URL') . '/view-booking?bookingId=' . $guest['bookingId'] }}" class="button">Access Guest Portal</a>
         </div>
 
         <div class="footer">
-            <p>Thank you for choosing our service.</p>
-            <p>&copy; Laraveil Suit</p>
+            <p>Experience unparalleled sophistication at the heart of the city.</p>
+            <p>&copy; {{ date('Y') }} LARAVEIL SUITES. All rights reserved.</p>
         </div>
     </div>
 </body>

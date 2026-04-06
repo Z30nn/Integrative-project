@@ -1,196 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/offersAbout.css') }}" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <title>@yield('title')</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <title>@yield('title', 'LARAVEIL SUITES') | Luxury Refined</title>
+    <link rel="icon" href="{{ asset('images/logo.png') }}" type="image/x-icon">
 
-    <link rel="icon" href="{{ asset('./images/logo.png') }}" type="image/x-icon">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Aboreto&family=Kanit:wght@300;400;500;600;700&family=Karla:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS Frameworks -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+
+    <!-- Custom Luxury CSS -->
+    <link href="{{ asset('css/luxury.css') }}" rel="stylesheet">
+    
     @yield('custom-css')
 </head>
 
 <body>
-    <!-- Navigation bar -->
-    <nav class="navbar-wrapper"> <!-- Add a wrapper for easier styling -->
-        <div class="container-fluid">
-            <nav class="navbar navbar-expand-lg bg-body-tertiary">
-                <div class="container-fluid">
-                    <a class="navbar-brand" href="#"><img src="./images/logo.png" alt="" class="logo"></a>
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav">
+    <!-- Premium Navigation -->
+    <div class="navbar-wrapper">
+        <div class="container-fluid px-lg-5">
+            <nav class="navbar navbar-expand-lg">
+                <div class="container-fluid position-relative">
+                    <!-- Left Nav -->
+                    <div class="collapse navbar-collapse w-100" id="navbarNav">
+                        <ul class="navbar-nav me-auto">
                             <li class="nav-item">
-                                <a class="nav-link" aria-current="page" href="/">Home</a>
+                                <a class="nav-link {{ Request::is('/') ? 'active' : '' }}" href="/">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/accommodation">Accommodation</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/offers">Offers</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/about">About</a>
+                                <a class="nav-link {{ Request::is('accommodation') ? 'active' : '' }}" href="/accommodation">Accommodation</a>
                             </li>
                         </ul>
-                        <!-- Move the button inside the collapsible navbar -->
-                        <div class="d-lg-none mt-2"> <!-- d-lg-none hides the button on larger screens -->
-                            <a class="bookBtn py-2" href="/book-now" style="text-decoration: none;">Book Now</a>
-                            @if (auth()->check())
-                            <!-- Show Logout Button -->
-                            @if (auth()->user()->role == 'admin')
-                            <form method="GET" action="{{ route('admin') }}" style="display: inline;">
-                                @csrf
-                                <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                    Dahboard
-                                </button>
-                            </form>
-                            @elseif (auth()->user()->role == 'cashier')
-                            <form method="GET" action="{{ route('cashier') }}" style="display: inline;">
-                                @csrf
-                                <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                    View Tellering
-                                </button>
-                            </form>
-                            @else
-                            <form method="GET" action="{{ route('view-booking') }}" style="display: inline;">
-                                @csrf
-                                <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                    View Booking
-                                </button>
-                            </form>
-                            @endif
-                            @else
-                            <!-- Show Login Button -->
-                            <a class="bookBtn py-2" href="/login" style="text-decoration: none;">Login</a>
-                            @endif
-                        </div>
                     </div>
-                    <div class="text-center p-relative logo-name"> <!-- d-none d-lg-block shows logo only on larger screens -->
-                        <p class="laraveil">LARAVEIL</p>
-                        <p class="suites">SUITES</p>
+
+                    <!-- Center Branding -->
+                    <a class="navbar-brand-center text-center d-flex flex-column align-items-center text-decoration-none" href="/">
+                        <img src="{{ asset('images/logo.png') }}" alt="logo" class="logo mb-1" style="height: 48px;">
+                        <h1 class="brand-text-main text-white">LARAVEIL</h1>
+                        <span class="brand-text-sub">SUITES</span>
+                    </a>
+
+                    <!-- Right Nav & Buttons -->
+                    <div class="collapse navbar-collapse w-100">
+                        <ul class="navbar-nav ms-auto align-items-center">
+                            <li class="nav-item">
+                                <a class="nav-link {{ Request::is('offers') ? 'active' : '' }}" href="/offers">Offers</a>
+                            </li>
+                            <li class="nav-item pe-lg-4">
+                                <a class="nav-link {{ Request::is('about') ? 'active' : '' }}" href="/about">About</a>
+                            </li>
+                            <li class="nav-item">
+                                @if (auth()->check())
+                                    @php $role = auth()->user()->role; @endphp
+                                    <a class="btn-luxury" href="{{ route($role == 'admin' ? 'admin' : ($role == 'cashier' ? 'cashier' : 'view-booking')) }}">
+                                        Portal
+                                    </a>
+                                @else
+                                    <a class="btn-luxury" href="/login">Login</a>
+                                @endif
+                            </li>
+                            <li class="nav-item ps-3 d-none d-lg-block">
+                                <a class="btn btn-premium-solid px-4" href="/book-now">Book Now</a>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="d-none d-lg-block"> <!-- d-none d-lg-block hides the button on smaller screens -->
-                        <a class="bookBtn py-2" href="/book-now" style="text-decoration: none;">Book Now</a>
-                        @if (auth()->check())
-                        <!-- Show Logout Button -->
-                        @if (auth()->user()->role == 'admin')
-                        <form method="GET" action="{{ route('admin') }}" style="display: inline;">
-                            @csrf
-                            <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                Dahboard
-                            </button>
-                        </form>
-                        @elseif (auth()->user()->role == 'cashier')
-                            <form method="GET" action="{{ route('cashier') }}" style="display: inline;">
-                                @csrf
-                                <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                    View Tellering
-                                </button>
-                            </form>
-                        @else
-                        <form method="GET" action="{{ route('view-booking') }}" style="display: inline;">
-                            @csrf
-                            <button type="submit" class="bookBtn py-2" style="text-decoration: none;">
-                                View Booking
-                            </button>
-                        </form>
-                        @endif
-                        @else
-                        <!-- Show Login Button -->
-                        <a class="bookBtn py-2" href="/login" style="text-decoration: none;">Login</a>
-                        @endif
-                    </div>
+
+                    <!-- Mobile Toggle -->
+                    <button class="navbar-toggler border-0 text-white" type="button" data-bs-toggle="collapse" data-bs-target="#mobileNav">
+                        <i class="bi bi-list fs-2"></i>
+                    </button>
                 </div>
             </nav>
         </div>
-    </nav>
-
-    <!-- Content section -->
-    <div>
-        @yield('content') <!-- This will include content from the child view (like index.blade.php) -->
     </div>
 
-    <!-- JavaScript for hide navbar on scroll -->
-    <footer class="container-fluid footer">
+    <!-- Mobile Menu Collapse -->
+    <div class="collapse bg-dark position-fixed w-100" id="mobileNav" style="z-index: 999; top: 80px;">
+        <div class="p-4 text-center">
+            <a class="nav-link text-white py-3 d-block border-bottom" href="/">Home</a>
+            <a class="nav-link text-white py-3 d-block border-bottom" href="/accommodation">Accommodation</a>
+            <a class="nav-link text-white py-3 d-block border-bottom" href="/offers">Offers</a>
+            <a class="nav-link text-white py-3 d-block border-bottom" href="/about">About</a>
+            <a class="btn-luxury mt-4 w-100" href="/book-now">Book Now</a>
+        </div>
+    </div>
+
+    <!-- Page Content -->
+    <main>
+        @yield('content')
+    </main>
+
+    <!-- Premium Footer -->
+    <footer class="footer">
         <div class="container">
-            <div class="row footerData">
-                <div class="col-12 col-md-3">
-                    <img src="./images/logo.png" alt="">
-                    <p>Luxuryliving! Find your peace in the pulse of BGC</p>
-                    <div class="container icons">
+            <div class="row g-5">
+                <!-- Brand Info -->
+                <div class="col-lg-4 text-center text-lg-start">
+                    <img src="{{ asset('images/logo.png') }}" alt="LARAVEIL SUITES">
+                    <p class="text-cream opacity-75 pe-lg-5">Experience unparalleled sophistication at the heart of the city. LARAVEIL SUITES is where timeless elegance meets modern luxury living.</p>
+                    <div class="social-icons mt-4">
                         <i class="bi bi-facebook"></i>
                         <i class="bi bi-instagram"></i>
-                        <i class="bi bi-twitter"></i>
+                        <i class="bi bi-twitter-x"></i>
                         <i class="bi bi-youtube"></i>
                     </div>
                 </div>
-                <div class="col-12 col-md-3 text-center">
-                    <h2 class="idk">Contacts</h2>
-                    <p>Fort Bonifacio, Taguig</p>
-                    <p>+63 98763643812</p>
-                    <p>laraveilsuites@gmail.com</p>
-                </div>
-                <div class="col-12 col-md-3 text-center">
-                    <h2 class="idk">Quick Links</h2>
+
+                <!-- Contact Info -->
+                <div class="col-lg-2 text-center text-lg-start">
+                    <h4>Direct</h4>
                     <ul class="list-unstyled">
-                        <li><a href="/offers" class="footer-link">
-                                <p>OFFERS</p>
-                            </a></li>
-                        <li><a href="/about" class="footer-link">
-                                <p>ABOUT</p>
-                            </a></li>
-                        <li><a href="/home" class="footer-link">
-                                <p>GALLERY</p>
-                            </a></li>
-                        <li><a href="/accommodation" class="footer-link">
-                                <p>ACCOMMODATION</p>
-                            </a></li>
+                        <li class="mb-3 text-cream opacity-75"><i class="bi bi-geo-alt me-2"></i> Fort Bonifacio, Taguig</li>
+                        <li class="mb-3 text-cream opacity-75"><i class="bi bi-telephone me-2"></i> +63 987 636 4381</li>
+                        <li class="mb-3 text-cream opacity-75"><i class="bi bi-envelope me-2"></i> info@laraveil.com</li>
                     </ul>
                 </div>
-                <div class="col-12 col-md-3 text-center">
-                    <h2 class="idk">Privacy and Policy</h2>
-                    <p><a href="{{ url('/privacy-policy') }}" class="footer-link">Privacy & Policy</a></p>
+
+                <!-- Quick Links -->
+                <div class="col-lg-3 text-center text-lg-start">
+                    <h4>Destinations</h4>
+                    <div class="row">
+                        <div class="col-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="/accommodation" class="footer-link">Suites</a></li>
+                                <li class="mb-2"><a href="/offers" class="footer-link">Curated Offers</a></li>
+                                <li class="mb-2"><a href="/about" class="footer-link">Our Story</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2"><a href="/book-now" class="footer-link">Reservations</a></li>
+                                <li class="mb-2"><a href="/login" class="footer-link">Staff Login</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legal -->
+                <div class="col-lg-3 text-center text-lg-start">
+                    <h4>Legality</h4>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="/privacy-policy" class="footer-link">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="/terms" class="footer-link">Terms of Service</a></li>
+                    </ul>
+                    <p class="small text-cream opacity-75 mt-5">© 2026 LARAVEIL SUITES. All Rights Reserved.</p>
                 </div>
             </div>
         </div>
     </footer>
+
+    <!-- Scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
     <script>
-        let lastScrollTop = 0;
+        // AOS Animation Engine
+        AOS.init({
+            duration: 1000,
+            once: true,
+            easing: 'ease-out-cubic'
+        });
+
+        // Sticky Navbar logic
         window.addEventListener("scroll", function() {
-            let navbar = document.querySelector(".navbar-wrapper");
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const navbar = document.querySelector(".navbar-wrapper");
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-            if (scrollTop > lastScrollTop) {
-                // Scrolling down, hide the navbar
-                navbar.classList.add("hide-nav");
+            if (scrollTop > 50) {
+                navbar.classList.add("scrolled");
             } else {
-                // Scrolling up, show the navbar
-                navbar.classList.remove("hide-nav");
+                navbar.classList.remove("scrolled");
             }
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Prevent negative scroll
-
-
         });
     </script>
-    <script src="{{ asset('js/book-now.js') }}"></script>
     <script src="{{ asset('js/script.js') }}"></script>
-
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    @yield('custom-js')
 </body>
-
 </html>

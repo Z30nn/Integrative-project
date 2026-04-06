@@ -1,0 +1,215 @@
+{
+  "info": {
+    "name": "Laraviel Suite API",
+    "_postman_id": "laraviel-suite-api-v1",
+    "description": "RESTful API collection for Laraviel Suite hotel management system.\n\n## Setup\n1. Set the `base_url` variable to `http://127.0.0.1:8000`\n2. Login via POST /api/v1/auth/login\n3. The token is automatically saved to `jwt_token` variable\n\n## Credentials (default seeds)\n- Admin: admin@gmail.com / password\n- Cashier: cashier@gmail.com / password",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000" },
+    { "key": "jwt_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var json = pm.response.json();",
+                  "  pm.collectionVariables.set('jwt_token', json.access_token);",
+                  "  pm.test('JWT token received', () => pm.expect(json.access_token).to.not.be.empty);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": "{{base_url}}/api/v1/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"password\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/auth/me"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/auth/refresh"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/auth/logout"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "List Rooms",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rooms?availability=Available",
+              "query": [{"key": "availability", "value": "Available", "disabled": true}]
+            }
+          }
+        },
+        {
+          "name": "Get Single Room",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/rooms/1"
+          }
+        },
+        {
+          "name": "Create Room (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{jwt_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{base_url}}/api/v1/rooms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_number\": \"101\",\n  \"room_type\": \"Standard V1\",\n  \"availability\": \"Available\",\n  \"description\": \"Standard room with garden view\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Room (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{jwt_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{base_url}}/api/v1/rooms/1",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability\": \"Occupied\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Room (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/rooms/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guests",
+      "item": [
+        {
+          "name": "List Guests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/guests?search=",
+              "query": [{"key": "search", "value": "", "disabled": true}]
+            }
+          }
+        },
+        {
+          "name": "Create Guest Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{jwt_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "url": "{{base_url}}/api/v1/guests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"BK-2025-001\",\n  \"lastname\": \"Dela Cruz\",\n  \"firstname\": \"Juan\",\n  \"salutation\": \"Mr.\",\n  \"gender\": \"Male\",\n  \"guestCount\": 2,\n  \"discountOption\": \"None\",\n  \"email\": \"juan@example.com\",\n  \"contactNumber\": \"09171234567\",\n  \"address\": \"123 Main St, Manila\",\n  \"checkIn\": \"2025-04-01\",\n  \"checkOut\": \"2025-04-03\",\n  \"bookedRooms\": \"Standard V1\",\n  \"priceTotal\": 5000\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Guest",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/guests/1"
+          }
+        },
+        {
+          "name": "Delete Guest (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/guests/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "item": [
+        {
+          "name": "List Availed Services",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/availed-services?payment_status=Pending",
+              "query": [{"key": "payment_status", "value": "Pending", "disabled": true}]
+            }
+          }
+        },
+        {
+          "name": "Mark Service as Paid (Cashier/Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/availed-services/1/mark-paid"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Monitoring",
+      "item": [
+        {
+          "name": "System Dashboard (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{jwt_token}}"}],
+            "url": "{{base_url}}/api/v1/dashboard"
+          }
+        }
+      ]
+    }
+  ]
+}
