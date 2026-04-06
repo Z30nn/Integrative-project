@@ -14,18 +14,25 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run(): void
-    {
-        DB::table('users')->insert([
+{
+    // Admin
+    \App\Models\User::updateOrCreate(
+        ['email' => 'admin@gmail.com'], // The unique check
+        [
             'name' => 'admin',
-            'email' => 'admin@gmail.com',
             'role' => 'admin',
             'password' => Hash::make('password'),
-        ]);
-        DB::table('users')->insert([
+        ]
+    );
+
+    // Cashier
+    \App\Models\User::updateOrCreate(
+        ['email' => 'cashier@gmail.com'],
+        [
             'name' => 'cashier',
-            'email' => 'cashier@gmail.com',
             'role' => 'cashier',
             'password' => Hash::make('password'),
-        ]);
-    }
+        ]
+    );
+}
 }

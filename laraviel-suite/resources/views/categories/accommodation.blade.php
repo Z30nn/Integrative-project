@@ -15,10 +15,10 @@
         <div class="modal-content" style="border-radius: 15px; padding: 30px;">
             <div class="modal-body" style="color: #FEF3E2; padding-top: 20px; padding-bottom: 20px;"> 
                 <div class="d-flex justify-content-center mb-3">
-                    <img src="./images/balcony.png" class="img-fluid mx-2" alt="Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
+                    <img src="{{ asset('images/balcony.png') }}" class="img-fluid mx-2" alt="Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
                     <div class="d-flex flex-column">
-                        <img src="./images/living area.png" class="img-fluid mb-2" alt="Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
-                        <img src="./images/kitchen.png" class="img-fluid" alt="Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/living area.png') }}" class="img-fluid mb-2" alt="Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/kitchen.png') }}" class="img-fluid" alt="Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
                     </div>
                 </div>
 
@@ -55,10 +55,10 @@
         <div class="modal-content" style="border-radius: 15px; padding: 30px;">
             <div class="modal-body" style="color: #FEF3E2; padding-top: 20px; padding-bottom: 20px;"> 
                 <div class="d-flex justify-content-center mb-3">
-                    <img src="./images/balcony.png" class="img-fluid mx-2" alt="Deluxe Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
+                    <img src="{{ asset('images/balcony.png') }}" class="img-fluid mx-2" alt="Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
                     <div class="d-flex flex-column">
-                        <img src="./images/living area.png" class="img-fluid mb-2" alt="Deluxe Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
-                        <img src="./images/kitchen.png" class="img-fluid" alt="Deluxe Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/living area.png') }}" class="img-fluid mb-2" alt="Deluxe Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/kitchen.png') }}" class="img-fluid" alt="Deluxe Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
                     </div>
                 </div>
 
@@ -98,10 +98,10 @@
         <div class="modal-content" style="border-radius: 15px; padding: 30px;">
             <div class="modal-body" style="color: #FEF3E2; padding-top: 20px; padding-bottom: 20px;"> 
                 <div class="d-flex justify-content-center mb-3">
-                    <img src="./images/balcony.png" class="img-fluid mx-2" alt="Luxury Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
+                    <img src="{{ asset('images/balcony.png') }}" class="img-fluid mx-2" alt="Room Feature 1" style="border-radius: 15px; width: 40%; height: 328px;">
                     <div class="d-flex flex-column">
-                        <img src="./images/living area.png" class="img-fluid mb-2" alt="Luxury Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
-                        <img src="./images/kitchen.png" class="img-fluid" alt="Luxury Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/living area.png') }}" class="img-fluid mb-2" alt="Luxury Room Feature 2" style="border-radius: 15px; width: 100%; height: 160px;">
+                        <img src="{{ asset('images/kitchen.png') }}" class="img-fluid" alt="Luxury Room Feature 3" style="border-radius: 15px; width: 100%; height: 160px;">
                     </div>
                 </div>
 

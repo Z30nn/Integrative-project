@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const roomHtml = `
                 <div class="col-md-6 col-lg-4 col-sm-12">
                     <div class="suite card">
-                        <img src="${room.image_path}" class="card-img-top w-369.33" alt="${room.room_type}">
+                        <img src="/${room.image_path}" class="card-img-top w-369.33" alt="${room.room_type}">
                         <div class="card-body">
                             <h3 class="card-title">${room.room_type}</h3>
                             <p class="card-text">${room.description}</p>
