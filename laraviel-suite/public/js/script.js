@@ -1,452 +1,354 @@
 document.addEventListener("DOMContentLoaded", function () {
-    let currentStep = 1;
-    let checkInDate = null;
-    let checkOutDate = null;
-    let selectedRooms = [];
-    let totalPrice = 0;
 
-    let calYear = new Date().getFullYear();
-    let calMonth = new Date().getMonth();
-
-    // ── Pre-fetch Elevation ────────────────────
-    const fetchRooms = () => {
-        const container = document.querySelector(".standard-room");
-        if (!container) return;
-
-        fetch("/rooms")
-            .then(res => {
-                if (!res.ok) throw new Error("Network response was not ok");
-                return res.json();
-            })
-            .then(data => {
-                const loader = document.getElementById("loader");
-                if (loader) loader.remove();
-
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="col-12 text-center py-5 text-gold opacity-50">No sanctuaries available at this moment.</div>';
-                    return;
-                }
-
-                data.forEach(room => {
-                    const modalTarget = room.room_type.includes("Deluxe") ? "#deluxeAmenitiesModal" : 
-                                      (room.room_type.includes("Luxury") ? "#luxuryAmenitiesModal" : "#amenitiesModal");
-
-                    const roomHtml = `
-                    <div class="col-md-6 col-lg-4 mb-4" data-aos="fade-up">
-                        <div class="room-card">
-                            <div class="room-image-wrapper">
-                                <img src="/${room.image_path.replace(/^\//, '')}" alt="${room.room_type}" loading="lazy">
-                                <span class="room-badge">${room.room_type.split(' ')[0]}</span>
-                            </div>
-                            <div class="room-content">
-                                <h3 class="room-type">${room.room_type}</h3>
-                                <p class="room-description">${room.description.substring(0, 90)}...</p>
-                                
-                                <div class="room-price-row pt-3 mt-auto border-top border-gold border-opacity-10 d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="price-label">Per Night</span>
-                                        <span class="price-value">₱${parseFloat(room.price).toLocaleString()}</span>
-                                    </div>
-                                    <button class="btn btn-premium-solid btn-sm select-room-btn" 
-                                            data-id="${room.id}" 
-                                            data-type="${room.room_type}" 
-                                            data-price="${room.price}">
-                                        Select
-                                    </button>
-                                </div>
-                                <div class="text-center mt-3">
-                                    <a href="#" class="small text-gold text-decoration-none aboreto" style="font-size: 0.6rem; letter-spacing: 2px;" data-bs-toggle="modal" data-bs-target="${modalTarget}">
-                                        View In-Suite Amenities
-                                    </a>
+    console.log(localStorage.getItem("bookingId"));
+    fetch("/rooms")
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(
+                    "Network response was not ok " + response.statusText
+                );
+            }
+            return response.json(); // Parse the JSON data from the response
+        })
+        .then((data) => {
+            const container = document.querySelector(".standard-room"); // Select the container
+            data.forEach((room) => {
+                // Get the actual price and room_price_id
+                const roomPrice = room.price; // Actual price
+                const roomPriceId = room.room_price_id; // Room Price ID
+                
+                const roomHtml = `
+                <div class="col-md-6 col-lg-4 col-sm-12">
+                    <div class="suite card">
+                        <img src="/${room.image_path}" class="card-img-top w-369.33" alt="${room.room_type}">
+                        <div class="card-body">
+                            <h3 class="card-title">${room.room_type}</h3>
+                            <p class="card-text">${room.description}</p>
+                            <h4 class="suite-price mt-2">
+                                Php ${parseFloat(roomPrice).toFixed(2)}/per night
+                            </h4>
+                            <p class="room-price-id mt-2">Price ID: ${roomPriceId}</p> <!-- Display room price ID -->
+                            <div class="row text-center">
+                                <div class="col">
+                                    <a href="/book-now" class="card-book">BOOK NOW</a>
                                 </div>
                             </div>
                         </div>
-                    </div>`;
-                    container.insertAdjacentHTML("beforeend", roomHtml);
-                });
+                    </div>
+                </div>
+                `;
+                
+                // Append the generated HTML to the container
+                container.insertAdjacentHTML("beforeend", roomHtml);
+            });
+            
+        })
+        .catch((error) => {
+            console.error("Error fetching rooms:", error);
+        });
 
-                // Attach selection listeners
-                document.querySelectorAll(".select-room-btn").forEach(btn => {
-                    btn.addEventListener("click", function() {
-                        const roomId = this.dataset.id;
-                        
-                        // Redirect logic if on Accommodation page
-                        if (!document.getElementById("stepper")) {
-                            window.location.href = `/book-now?room_id=${roomId}`;
-                            return;
-                        }
+    const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ];
 
-                        const roomType = this.dataset.type;
-                        const price = parseFloat(this.dataset.price);
+    const currentMonthDropdown = document.getElementById(
+        "currentMonthDropdown"
+    );
+    const nextMonthDropdown = document.getElementById("nextMonthDropdown");
 
-                        if (this.innerText === "Selected") {
-                            this.innerText = "Select";
-                            this.classList.replace("btn-light", "btn-premium-solid");
-                            selectedRooms = [];
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth(); // Current month index (0-11)
+    const currentYear = currentDate.getFullYear();
+
+    // Populate the current month dropdown with months from the current month onward
+    for (let i = currentMonth; i < monthNames.length; i++) {
+        const option = document.createElement("option");
+        option.value = i + 1; // Month value (1-12)
+        option.textContent = monthNames[i];
+        currentMonthDropdown.appendChild(option);
+    }
+
+    // Populate the next month dropdown with months from the current month onward, and wrap around for next year
+    for (
+        let i = currentMonth + 1;
+        i < monthNames.length + currentMonth + 1;
+        i++
+    ) {
+        const monthIndex = i % 12; // Wrap around after December
+        const yearOffset = Math.floor(i / 12); // Increment year after December
+        const option = document.createElement("option");
+        option.value = monthIndex + 1; // Month value (1-12)
+        option.textContent = `${monthNames[monthIndex]} ${
+            currentYear + yearOffset
+        }`;
+        nextMonthDropdown.appendChild(option);
+    }
+
+    // Set the default selected option to the current month
+    currentMonthDropdown.value = currentMonth + 1;
+    nextMonthDropdown.value =
+        (currentMonth + 1) % 12 === 0 ? 1 : currentMonth + 2; // Set next month or wrap around to January
+
+    let dateSelectionStep = 0,
+        checkInDate = null,
+        checkOutDate = null,
+        checkInCell = null,
+        checkOutCell = null;
+
+    function isValidDateSelection() {
+        if (checkInDate && checkOutDate) {
+            const checkInDateObject = new Date(checkInDate),
+                checkOutDateObject = new Date(checkOutDate);
+            return checkOutDateObject >= checkInDateObject;
+        }
+        return false;
+    }
+
+    function calculateNights(checkIn, checkOut) {
+        const checkInDateObject = new Date(checkIn),
+            checkOutDateObject = new Date(checkOut);
+        const nights = Math.ceil(
+            (checkOutDateObject - checkInDateObject) / (1000 * 60 * 60 * 24)
+        );
+        if (nights >= 0) {
+            document.querySelector(".nights").textContent = `${nights} nights`;
+            document.querySelector("#checkIndd").textContent = checkIn;
+            document.querySelector("#checkOutdd").textContent = checkOut;
+            document.querySelector("#totalNightsInput").value = nights;
+            return true;
+        }
+        alert("Check-out date should be after Check-in date!");
+        document.querySelector(".nights").textContent = "N/A";
+        dateSelectionStep = 0;
+        return false;
+    }
+        function generateCalendar(year, month, calendarId, titleId) {
+            if (month > 11) {
+                year += 1; // Increment year
+                month = 0; // Reset to January
+            }
+        
+            const date = new Date(year, month),
+                daysInMonth = new Date(year, month + 1, 0).getDate(),
+                firstDay = new Date(year, month, 1).getDay();
+        
+            document.getElementById(titleId).textContent = `${date.toLocaleString(
+                "default",
+                { month: "long" }
+            )} ${year}`;
+        
+            let table = `<thead class="thead-dark">
+                            <tr>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                            </tr>
+                         </thead>
+                         <tbody><tr>`;
+            for (let i = 0; i < firstDay; i++) table += `<td></td>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const paddedDay = String(day).padStart(2, "0");
+                table += `<td><span class="clickable-day" data-date="${year}-${
+                    month + 1
+                }-${paddedDay}">${paddedDay}</span></td>`;
+                if ((day + firstDay) % 7 === 0) table += `</tr><tr>`;
+            }
+            table += `</tr></tbody>`;
+            document.getElementById(calendarId).innerHTML = table;
+        
+            // Add click event listeners
+            document
+                .querySelectorAll(`#${calendarId} .clickable-day`)
+                .forEach((day) => {
+                    day.addEventListener("click", function () {
+                        const selectedDate = this.getAttribute("data-date");
+                        const parentTd = this.parentElement;
+                        if (dateSelectionStep === 0) {
+                            checkInDate = selectedDate;
+                            document.querySelector(".check-in").textContent =
+                                checkInDate;
+                            checkInCell = parentTd;
+                            dateSelectionStep = 1;
+                            parentTd.classList.add("active-cell");
                         } else {
-                            // Deselect all others
-                            document.querySelectorAll(".select-room-btn").forEach(b => {
-                                b.innerText = "Select";
-                                b.classList.replace("btn-light", "btn-premium-solid");
-                            });
-                            // Select this one
-                            this.innerText = "Selected";
-                            this.classList.replace("btn-premium-solid", "btn-light");
-                            selectedRooms = [{ id: roomId, type: roomType, price: price }];
+                            checkOutDate = selectedDate;
+                            document.querySelector(".check-out").textContent =
+                                checkOutDate;
+                            checkOutCell = parentTd;
+                            if (calculateNights(checkInDate, checkOutDate)) {
+                                dateSelectionStep = 0;
+                                document
+                                    .querySelectorAll(`#${calendarId} td`)
+                                    .forEach((cell) =>
+                                        cell.classList.remove("active-cell")
+                                    );
+                                checkInCell.classList.add("active-cell");
+                                checkOutCell.classList.add("active-cell");
+                                let currentDate = new Date(checkInDate),
+                                    checkOutDateObject = new Date(checkOutDate);
+                                while (currentDate <= checkOutDateObject) {
+                                    const dateString = `${currentDate.getFullYear()}-${
+                                        currentDate.getMonth() + 1
+                                    }-${String(currentDate.getDate()).padStart(2, "0")}`;
+                                    const dayElement = document.querySelector(
+                                        `.clickable-day[data-date="${dateString}"]`
+                                    );
+                                    if (dayElement)
+                                        dayElement.parentElement.classList.add(
+                                            "active-cell"
+                                        );
+                                    currentDate.setDate(currentDate.getDate() + 1);
+                                }
+                            } else {
+                                alert(
+                                    "Invalid date selection! Please select valid check-in and check-out dates."
+                                );
+                            }
                         }
-                        updateSummary();
                     });
                 });
+        }
+        
 
-                // Auto-select room from URL
-                const urlParams = new URLSearchParams(window.location.search);
-                const preselectRoomId = urlParams.get('room_id');
-                if (preselectRoomId && document.getElementById("stepper")) {
-                    const preselectBtn = document.querySelector(`.select-room-btn[data-id="${preselectRoomId}"]`);
-                    if (preselectBtn) {
-                        preselectBtn.click();
-                        // Jump to Step 2 to show their selection
-                        setTimeout(() => switchStep(2), 500); 
-                    }
+
+
+    let currentStep = 1;
+    document.querySelector(".nextBtn").addEventListener("click", function () {
+        if (isValidDateSelection()) {
+            const checkIndate1 = $("#checkIndd").text(),
+                checkOutdate1 = $("#checkOutdd").text();
+            if (currentStep < document.querySelectorAll(".circle").length) {
+                document
+                    .querySelectorAll(".circle")
+                    [currentStep].classList.add("light");
+                if (currentStep === 1) {
+                    document
+                        .querySelector("#select-accommodation")
+                        .classList.remove("d-none");
+                    document
+                        .querySelector("#date-picker")
+                        .classList.add("d-none");
+                    currentStep++;
+                } else if (currentStep === 2) {
+                    document
+                        .querySelector("#guest-info")
+                        .classList.remove("d-none");
+                    document
+                        .querySelector("#select-accommodation")
+                        .classList.add("d-none");
+                    currentStep++;
+                } else if (currentStep === 3) {
+                    document
+                        .querySelector("#guest-info")
+                        .classList.add("d-none");
+                    finalConfirmation(checkIndate1, checkOutdate1);
+                    document
+                        .querySelector("#booking-confirmation")
+                        .classList.remove("d-none");
                 }
-            })
-            .catch(err => {
-                console.error("Room fetch error:", err);
-                const loader = document.getElementById("loader");
-                if (loader) {
-                    loader.innerHTML = '<p class="text-gold small">An error occurred while curating our collection. Please refresh.</p>';
-                }
-            });
-    };
+            }
+        }
+    });
 
-    const updateSummary = () => {
-        const roomListElem = document.querySelector(".booked-rooms");
-        if(!roomListElem) return;
+    function generateUniqueId() {
+        const uniqueId =
+            Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        localStorage.setItem("bookingId", uniqueId);
+        return uniqueId;
+    }
 
-        const nightsInput = document.querySelector("#totalNightsInput");
-        const nights = nightsInput ? parseInt(nightsInput.value) || 0 : 0;
-
-        if (selectedRooms.length === 0) {
-            roomListElem.textContent = "None selected";
+    function finalConfirmation(cin, cout) {
+        // Call generateUniqueId if bookingId doesn't already exist in localStorage
+        let bookingId = localStorage.getItem("bookingId");
+        if (!bookingId) {
+            // If no bookingId, generate and store a new one
+            bookingId = generateUniqueId();
         } else {
-            roomListElem.innerHTML = selectedRooms.map(r => `<div>${r.type}</div>`).join("");
+            // If bookingId exists, remove it from localStorage before generating a new one
+            localStorage.removeItem("bookingId");
+            bookingId = generateUniqueId(); // Generate a new uniqueId
         }
 
-        totalPrice = selectedRooms.reduce((acc, r) => acc + (r.price * nights), 0);
-        
-        document.querySelectorAll(".totalPriceDisplay").forEach(display => {
-            display.textContent = `₱${totalPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        });
-    };
-
-    // ── Payment Form Toggle ────────────────────
-    const paymentMethodSelect = document.getElementById('paymentMethodSelect');
-    if (paymentMethodSelect) {
-        paymentMethodSelect.addEventListener('change', function(e) {
-            document.querySelectorAll('.payment-form').forEach(el => el.classList.add('d-none'));
-            if (e.target.value === 'over_the_counter') {
-                document.getElementById('counterPaymentForm').classList.remove('d-none');
-            }
-        });
-    }
-
-    // ── Step Navigation ────────────────────────
-    const switchStep = (step) => {
-        // Validation for step 1
-        if (step === 2 && (!checkInDate || !checkOutDate)) {
-            alert("Please select your Timeline first.");
-            return;
-        }
-
-        // Validation for step 2
-        if (step === 3 && selectedRooms.length === 0) {
-            alert("Please select at least one Suite.");
-            return;
-        }
-
-        // Validation for step 3
-        if (step === 4) {
-            const reqFields = ["firstname", "lastname", "email", "contactNumber", "address"];
-            const isComplete = reqFields.every(id => document.getElementById(id).value.trim() !== "");
-            if (!isComplete) {
-                alert("Please complete the Resident Profile.");
-                return;
-            }
-        }
-
-        // Processing payment (transition from 4 to 5)
-        if (step === 5) {
-            // Show processing
-            const paymentForms = document.querySelectorAll(".payment-form");
-            paymentForms.forEach(el => el.classList.add("d-none"));
-            if(document.getElementById("paymentMethodSelect")) document.getElementById("paymentMethodSelect").classList.add("d-none");
-            const labels = document.querySelectorAll("#step-4-content label");
-            labels.forEach(el => el.classList.add("d-none"));
-            
-            const processingNode = document.getElementById("paymentProcessing");
-            if(processingNode) processingNode.classList.remove("d-none");
-            
-            const stepNav = document.getElementById("step-navigation");
-            if(stepNav) stepNav.classList.add("d-none");
-            
-            setTimeout(() => {
-                submitBooking();
-                renderSwitch(5);
-            }, 2000);
-            return;
-        }
-
-        renderSwitch(step);
-    };
-
-    const renderSwitch = (step) => {
-        currentStep = step;
-
-        for(let i=1; i<=5; i++) {
-            const content = document.getElementById(`step-${i}-content`);
-            if(content) content.classList.add("d-none");
-            
-            const indicator = document.getElementById(`step-${i}-indicator`);
-            if(indicator) indicator.classList.remove("active");
-        }
-
-        const activeContent = document.getElementById(`step-${currentStep}-content`);
-        if(activeContent) activeContent.classList.remove("d-none");
-        
-        const activeIndicator = document.getElementById(`step-${currentStep}-indicator`);
-        if(activeIndicator) activeIndicator.classList.add("active");
-
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        const prevBtn = document.getElementById("prevBtn");
-        const nextBtn = document.getElementById("nextBtn");
-        
-        if (prevBtn) {
-            if (currentStep === 1 || currentStep === 5) prevBtn.classList.add("d-none");
-            else prevBtn.classList.remove("d-none");
-        }
-
-        if (nextBtn) {
-            if (currentStep === 5) nextBtn.classList.add("d-none");
-            else if (currentStep === 4) nextBtn.innerText = "Confirm & Pay";
-            else nextBtn.innerText = "Continue Journey";
-        }
-        
-        if(activeContent) {
-            anime({
-                targets: activeContent,
-                opacity: [0, 1],
-                translateY: [20, 0],
-                duration: 800,
-                easing: 'easeOutCubic'
-            });
-        }
-    };
-
-    if (document.getElementById("nextBtn")) {
-        document.getElementById("nextBtn").addEventListener("click", () => switchStep(currentStep + 1));
-    }
-    if (document.getElementById("prevBtn")) {
-        document.getElementById("prevBtn").addEventListener("click", () => switchStep(currentStep - 1));
-    }
-
-    // ── Calendar Core ──────────────────────────
-    function generateCalendar(year, month, calendarId, titleId) {
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDay = new Date(year, month, 1).getDay();
-
-        const titleElem = document.getElementById(titleId);
-        const calendarElem = document.getElementById(calendarId);
-        if (!titleElem || !calendarElem) return;
-
-        titleElem.textContent = `${monthNames[month]} ${year}`;
-
-        let table = `<thead><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr></thead><tbody><tr>`;
-        for (let i = 0; i < firstDay; i++) table += `<td></td>`;
-        
-        const today = new Date();
-        today.setHours(0,0,0,0);
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const loopDate = new Date(dateStr);
-            loopDate.setHours(0,0,0,0);
-
-            const isPast = loopDate < today;
-            let classes = ['clickable-day'];
-            
-            if (isPast) {
-                classes.push('disabled');
-            }
-            if (checkInDate === dateStr || checkOutDate === dateStr) {
-                classes.push('active-cell');
-            }
-
-            table += `<td><span class="${classes.join(' ')}" data-date="${dateStr}">${day}</span></td>`;
-            if ((day + firstDay) % 7 === 0) table += `</tr><tr>`;
-        }
-        table += `</tr></tbody>`;
-        calendarElem.innerHTML = table;
-
-        calendarElem.querySelectorAll(".clickable-day").forEach(day => {
-            if (day.classList.contains("disabled")) return;
-
-            day.addEventListener("click", function () {
-                const date = this.dataset.date;
-                if (!checkInDate || (checkInDate && checkOutDate)) {
-                    checkInDate = date;
-                    checkOutDate = null;
-                    document.getElementById("checkIndd").innerText = date;
-                    document.getElementById("checkOutdd").innerText = "-- -- ----";
-                    document.querySelectorAll(".clickable-day").forEach(d => d.classList.remove("active-cell"));
-                    this.classList.add("active-cell");
-                } else {
-                    if (new Date(date) < new Date(checkInDate)) {
-                        checkInDate = date;
-                        document.getElementById("checkIndd").innerText = date;
-                        document.querySelectorAll(".clickable-day").forEach(d => d.classList.remove("active-cell"));
-                        this.classList.add("active-cell");
-                    } else {
-                        checkOutDate = date;
-                        document.getElementById("checkOutdd").innerText = date;
-                        calculateNights();
-                        highlightRange();
-                    }
-                }
-            });
-        });
-    }
-
-    const calculateNights = () => {
-        if (checkInDate && checkOutDate) {
-            const di = new Date(checkInDate);
-            const do_ = new Date(checkOutDate);
-            const nights = Math.ceil((do_ - di) / (1000 * 60 * 60 * 24));
-            
-            const nDisplay = document.querySelector(".nights");
-            if(nDisplay) nDisplay.textContent = `${nights} Night${nights > 1 || nights === 0 ? 's' : ''}`;
-            
-            const nInput = document.getElementById("totalNightsInput");
-            if(nInput) nInput.value = nights;
-            
-            updateSummary();
-        }
-    };
-
-    const highlightRange = () => {
-        if (!checkInDate || !checkOutDate) return;
-        const start = new Date(checkInDate);
-        const end = new Date(checkOutDate);
-        document.querySelectorAll(".clickable-day").forEach(el => {
-            const current = new Date(el.dataset.date);
-            if (current >= start && current <= end && !el.classList.contains("disabled")) {
-                el.classList.add("active-cell");
-            } else if (current !== start && current !== end) {
-                el.classList.remove("active-cell");
-            }
-        });
-    };
-
-    const renderCalendars = () => {
-        if (!document.getElementById("currentMonthCalendar")) return;
-        
-        generateCalendar(calYear, calMonth, "currentMonthCalendar", "currentMonthTitle");
-        
-        let nextM = calMonth + 1;
-        let nextY = calYear;
-        if (nextM > 11) { nextM = 0; nextY++; }
-        generateCalendar(nextY, nextM, "nextMonthCalendar", "nextMonthTitle");
-        
-        highlightRange();
-    };
-
-    if (document.getElementById("prevMonthBtn")) {
-        document.getElementById("prevMonthBtn").addEventListener("click", () => {
-            calMonth--;
-            if (calMonth < 0) { calMonth = 11; calYear--; }
-            renderCalendars();
-        });
-    }
-
-    if (document.getElementById("nextMonthBtn")) {
-        document.getElementById("nextMonthBtn").addEventListener("click", () => {
-            calMonth++;
-            if (calMonth > 11) { calMonth = 0; calYear++; }
-            renderCalendars();
-        });
-    }
-
-    // ── Submission Logic ───────────────────────
-    const submitBooking = () => {
         const guestData = {
-            bookingId: Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
-            salutation: document.getElementById("salutation").value,
-            firstname: document.getElementById("firstname").value,
-            lastname: document.getElementById("lastname").value,
-            email: document.getElementById("email").value,
-            contactNumber: document.getElementById("contactNumber").value,
-            address: document.getElementById("address").value,
-            checkIn: checkInDate,
-            checkOut: checkOutDate,
-            bookedRooms: selectedRooms.map(r => r.type).join(", "),
-            priceTotal: totalPrice,
-            paymentMethod: 'over_the_counter',
-            paymentStatus: 'pending'
+            bookingId: bookingId || "", // Ensure bookingId is a string
+            lastname: document.getElementById("lastname")?.value.trim() || "",
+            firstname: document.getElementById("firstname")?.value.trim() || "",
+            salutation: document.getElementById("salutation")?.value || "",
+            birthdate: document.getElementById("birthdate")?.value || "",
+            gender: document.querySelector(".dropdown-toggle.gender")?.textContent.trim() || "",
+            guestCount: parseInt(document.getElementById("guestCount")?.value, 10) || 0,
+            discountOption: document.querySelector('input[name="discountOption"]:checked')?.value || "None",
+            email: document.getElementById("email")?.value.trim() || "",
+            contactNumber: document.getElementById("contactNumber")?.value.trim() || "",
+            address: document.getElementById("address")?.value.trim() || "",
+            checkIn: cin || "", // Ensure `cin` is a valid date string
+            checkOut: cout || "", // Ensure `cout` is a valid date string
+            bookedRooms: $(".booked-rooms").text().trim().replace(/(V\d+)/g, '$1,').trim(), // Convert array to comma-separated string
+                priceTotal: parseFloat(parseFloat($("span.totalPriceDisplay").text().replace("Php", "").trim()).toFixed(2)) || 0,
+                // Ensure this is a valid number
         };
-
-        const greeting = document.querySelector(".greeting");
-        if (greeting) greeting.innerText = `Welcome, ${guestData.salutation} ${guestData.lastname}`;
-
-        const confirmationBox = document.querySelector(".guest-info1");
-        if (confirmationBox) {
-            confirmationBox.innerHTML = `
-                <div class="mb-2"><strong>Account:</strong> ${guestData.lastname}, ${guestData.firstname}</div>
-                <div class="mb-2"><strong>Arrival:</strong> ${guestData.checkIn}</div>
-                <div class="mb-2"><strong>Departure:</strong> ${guestData.checkOut}</div>
-                <div class="mb-2"><strong>Suites:</strong> ${guestData.bookedRooms}</div>
-            `;
-        }
         
-        const totPriceEl = document.querySelector(".total-price");
-        if(totPriceEl) totPriceEl.innerText = `₱${totalPrice.toLocaleString()}`;
-
+        $(".greeting").text(
+            `Dear ${guestData.salutation} ${guestData.lastname},`
+        );
+        $(".guest-info1").append(`
+            Guest Name: <span>${guestData.lastname}, ${guestData.firstname}</span><br>
+            Check-In Date: <span>${cin}</span><br>
+            Check-Out Date: <span>${cout}</span><br>
+            Room Type and Room Rates: <br><span>${guestData.bookedRooms}</span>
+        `);
+        $("span.total-price").text(`Php ${guestData.priceTotal}`);
+        console.log(guestData);
         fetch("/submit-guest-info", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+                Accept: "application/json",
+                "X-CSRF-TOKEN": document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute("content"),
             },
-            body: JSON.stringify(guestData)
+            body: JSON.stringify(guestData),
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.errors) console.error(data.errors);
-            else {
-                console.log("Success:", data);
-                // Success animation
-                anime({
-                    targets: '.greeting',
-                    scale: [0.9, 1],
-                    duration: 1000,
-                    easing: 'easeOutElastic(1, .8)'
-                });
-            }
-        });
-    };
-
-    // ── Initialization ─────────────────────────
-    fetchRooms();
-    
-    if (document.getElementById("currentMonthCalendar")) {
-        // Auto-select today
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-        checkInDate = todayStr;
         
-        const checkInEl = document.getElementById("checkIndd");
-        if (checkInEl) checkInEl.innerText = todayStr;
+            .then((response) => response.json())
+            .then((data) =>
+                data.errors
+                    ? console.log("Validation errors:", data.errors)
+                    : alert("Check your email for a detailed receipt and tracking information for your stay. We're looking forward to hosting you!")
+                )
+            .catch(console.error);
 
-        renderCalendars();
     }
+
+    
+    // Initialize calendars
+    generateCalendar(
+        currentYear,
+        currentMonth,
+        "currentMonthCalendar",
+        "currentMonthTitle"
+    );
+    generateCalendar(
+        currentYear,
+        currentMonth + 1,
+        "nextMonthCalendar",
+        "nextMonthTitle"
+    );
+
 });

@@ -1,307 +1,256 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="en">
 
-@section('title', 'Guest Portal')
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Details</title>
+    <link rel="stylesheet" href="/css/viewb.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
 
-@section('custom-css')
-<style>
-    .portal-wrapper {
-        min-height: 100vh;
-        background: linear-gradient(rgba(30, 20, 12, 0.8), rgba(30, 20, 12, 0.9)), url('{{ asset('images/pexels-valeriya-1860197.jpg') }}') center/cover fixed no-repeat;
-        padding: 150px 0 100px;
-    }
+<body class="bg-dark text-white">
 
-    .portal-card {
-        background: var(--glass-dark);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid var(--border-gold);
-        border-radius: 30px;
-        padding: 40px;
-        height: 100%;
-    }
-
-    .portal-header {
-        border-bottom: 1px solid var(--border-gold);
-        padding-bottom: 30px;
-        margin-bottom: 40px;
-    }
-
-    .portal-label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: var(--brand-gold);
-        display: block;
-        margin-bottom: 5px;
-    }
-
-    .portal-value {
-        font-family: 'Kanit', sans-serif;
-        font-size: 1.1rem;
-        color: var(--brand-cream);
-    }
-
-    /* ── Progress Bar ────────────────────────── */
-    .progress-minimal {
-        height: 4px;
-        background: rgba(254, 243, 226, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-        margin-top: 15px;
-    }
-
-    .progress-bar-gold {
-        background: var(--brand-gold);
-        height: 100%;
-        box-shadow: 0 0 10px var(--brand-gold);
-    }
-
-    /* ── Service Form ────────────────────────── */
-    .service-select {
-        background: rgba(254, 243, 226, 0.05);
-        border: 1px solid var(--border-subtle);
-        color: var(--brand-cream);
-        border-radius: 12px;
-        padding: 12px;
-    }
-
-    /* ── Rating Stars ────────────────────────── */
-    .star-rating {
-        display: flex;
-        flex-direction: row-reverse;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .star-rating input { display: none; }
-    .star-rating label {
-        font-size: 2rem;
-        color: rgba(254, 243, 226, 0.2);
-        cursor: pointer;
-        transition: color 0.3s;
-    }
-
-    .star-rating input:checked ~ label,
-    .star-rating label:hover,
-    .star-rating label:hover ~ label {
-        color: var(--brand-gold);
-        text-shadow: 0 0 10px rgba(191, 167, 93, 0.4);
-    }
-</style>
-@endsection
-
-@section('content')
-<section class="portal-wrapper">
-    <div class="container">
+    <div class="container mt-5">
+        <!-- Booking Details -->
         @if($guest->booking_id != 404)
-        <!-- Portal Header -->
-        <div class="portal-header d-flex justify-content-between align-items-end" data-aos="fade-down">
-            <div>
-                <h5 class="brand-text-sub text-gold mb-2">Welcome Back</h5>
-                <h1 class="aboreto text-white h2 mb-0">{{ $guest->firstname }} {{ $guest->lastname }}</h1>
-            </div>
-            <div class="text-end">
-                <span class="portal-label">Reference</span>
-                <span class="text-gold fw-bold">#{{ $guest->booking_id }}</span>
-            </div>
+        <div class="booking-details mb-5">
+            <h2 class="text-center text-warning">Booking Details</h2>
+            <hr style="border-color: #BFA75D;">
+            <ul class="list-unstyled">
+                <li><strong>Room Type:</strong> {{ $guest->booked_rooms }}</li>
+                <li><strong>Booking Reference Number:</strong> {{ $guest->booking_id }}</li>
+                <li><strong>Guest Name:</strong> {{ $guest->firstname }} {{ $guest->lastname }}</li>
+                <li><strong>Check-in:</strong> {{ $guest->check_in }}</li>
+                <li><strong>Check-out:</strong> {{ $guest->check_out }}</li>
+            </ul>
         </div>
 
-        <div class="row g-4">
-            <!-- Stay Details -->
-            <div class="col-lg-4" data-aos="fade-up">
-                <div class="portal-card">
-                    <h4 class="aboreto text-gold mb-4 h6">Sanctuary Details</h4>
-                    <div class="mb-4">
-                        <span class="portal-label">Accommodations</span>
-                        <p class="portal-value">{{ $guest->booked_rooms }}</p>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-6">
-                            <span class="portal-label">Arrival</span>
-                            <p class="portal-value">{{ $guest->check_in }}</p>
-                        </div>
-                        <div class="col-6">
-                            <span class="portal-label">Departure</span>
-                            <p class="portal-value">{{ $guest->check_out }}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="portal-label">Investment Total</span>
-                        <p class="portal-value text-gold h4">₱{{ number_format($guest->price_total, 2) }}</p>
-                    </div>
-                </div>
-            </div>
+        <!-- Stay Progress -->
+        @php
+        $checkInDate = \Carbon\Carbon::parse($guest->check_in);
+        $checkOutDate = \Carbon\Carbon::parse($guest->check_out);
+        $totalDays = $checkInDate->diffInDays($checkOutDate);
+        $daysStayed = floor($checkInDate->diffInDays(now()));
+            if ($daysStayed < 0) {
+                $daysStayed = 0;
+            } else {
+                $daysStayed = $daysStayed;
+            }
+        $remainingDays = max(0, $totalDays - $daysStayed);
+        @endphp
 
-            <!-- Stay Progress -->
-            @php
-                $checkInDate = \Carbon\Carbon::parse($guest->check_in);
-                $checkOutDate = \Carbon\Carbon::parse($guest->check_out);
-                $totalDays = max(1, $checkInDate->diffInDays($checkOutDate));
-                $daysStayed = floor(max(0, $checkInDate->diffInDays(now())));
-                $percentage = min(100, ($daysStayed / $totalDays) * 100);
-            @endphp
-            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
-                <div class="portal-card text-center">
-                    <h4 class="aboreto text-gold mb-5 h6">Stay Progress</h4>
-                    <div class="position-relative d-inline-block mb-4">
-                        <h2 class="display-3 fw-bold text-white mb-0">{{ $daysStayed }}</h2>
-                        <span class="portal-label">Days Stayed</span>
-                    </div>
-                    <div class="px-4">
-                        <div class="d-flex justify-content-between small text-muted mb-2">
-                            <span>Arrival</span>
-                            <span>Departure</span>
-                        </div>
-                        <div class="progress-minimal">
-                            <div class="progress-bar-gold" style="width: {{ $percentage }}%"></div>
-                        </div>
-                        <p class="small text-gold mt-3 aboreto">{{ $checkOutDate > now() ? 'Stay in Progress' : 'Residency Completed' }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Services -->
-            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="portal-card">
-                    <h4 class="aboreto text-gold mb-4 h6">Enhanced Services</h4>
-                    <form action="{{ route('services.submit') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="booking_id" value="{{ $guest->booking_id }}">
-                        <input type="hidden" name="name" value="{{ $guest->firstname }} {{ $guest->lastname }}">
-                        
-                        <div class="mb-3">
-                            <label class="portal-label">Available Rituals</label>
-                            <select name="service_id" id="service" class="luxury-input py-2" required>
-                                <option value="" disabled selected>Select a service</option>
-                                @foreach($services as $service)
-                                <option value="{{ $service->service_id }}" data-price="{{ $service->price }}">
-                                    {{ $service->service_name }} (₱{{ number_format($service->price, 2) }})
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="portal-label">Preferred Date</label>
-                                <input type="date" name="service_date" id="service_date" class="luxury-input py-2" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="portal-label">Payment Mode</label>
-                                <select name="payment_method" class="luxury-input py-2" required>
-                                    <option value="over_the_counter">On Arrival</option>
-                                    <option value="online_payment">Digital</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <input type="hidden" name="total_price" id="total_price">
-                        <button type="submit" class="btn-premium-solid w-100 mt-3">Request Service</button>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Availed Services Table -->
-            <div class="col-12" data-aos="fade-up">
-                <div class="portal-card">
-                    <h4 class="aboreto text-gold mb-4 h6">Your Curated Selections</h4>
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover border-0">
-                            <thead class="text-gold small uppercase">
-                                <tr>
-                                    <th class="border-0">Service</th>
-                                    <th class="border-0">Scheduled</th>
-                                    <th class="border-0">Status</th>
-                                    <th class="border-0 text-end">Investment</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-muted small">
-                                @forelse ($guest->services as $service)
-                                <tr>
-                                    <td class="border-0 text-cream">{{ $service->service->service_name ?? 'Service' }}</td>
-                                    <td class="border-0">{{ $service->service_date }}</td>
-                                    <td class="border-0">
-                                        <span class="badge rounded-pill {{ $service->payment_status == 'pending' ? 'bg-warning text-dark' : 'bg-success' }}">
-                                            {{ ucfirst($service->payment_status) }}
-                                        </span>
-                                    </td>
-                                    <td class="border-0 text-end text-cream">₱{{ number_format($service->total_price, 2) }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 border-0">No additional services requested.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Feedback -->
-            <div class="col-lg-8" data-aos="fade-up">
-                <div class="portal-card">
-                    <h4 class="aboreto text-gold mb-4 h6">Guest Sentiment</h4>
-                    <form action="{{ route('feedback.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="guest_id" value="{{ $guest->id }}">
-                        
-                        <div class="star-rating mb-4">
-                            @for ($i = 5; $i >= 1; $i--)
-                                <input type="radio" name="rating" value="{{ $i }}" id="star{{ $i }}" required>
-                                <label for="star{{ $i }}"><i class="bi bi-star-fill"></i></label>
-                            @endfor
-                        </div>
-
-                        <textarea name="feedback" class="luxury-input" rows="4" placeholder="Share your experience at Laraveil..."></textarea>
-                        
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="form-check form-switch opacity-75">
-                                <input class="form-check-input" type="checkbox" name="anonymous" value="1" id="anonSwitch" checked>
-                                <label class="form-check-label small text-muted" for="anonSwitch">Submit Anonymously</label>
-                            </div>
-                            <button type="submit" class="btn-luxury px-5">Submit Feedback</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Logout/portal controls -->
-            <div class="col-lg-4" data-aos="fade-up">
-                <div class="portal-card d-flex flex-column justify-content-center align-items-center text-center">
-                    <p class="text-muted small mb-4">Need to conclude your portal session?</p>
-                    <form method="POST" action="{{ route('logout') }}" class="w-100">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-danger w-100 rounded-pill py-2">
-                             Secure Logout
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <div class="stay-progress mb-5">
+            <h2 class="text-center text-warning">Stay Progress</h2>
+            <hr style="border-color: #BFA75D;">
+            <ul class="list-unstyled">
+                <li><strong>Days Stayed:</strong> {{ $daysStayed }}</li>
+                <li><strong>Stay Status:</strong> {{ $checkOutDate > now() ? 'Ongoing' : 'Completed' }}</li>
+                <li><strong>Remaining Days:</strong> {{ $remainingDays }}</li>
+            </ul>
         </div>
-        @else
-        <div class="py-5 text-center" data-aos="zoom-in">
-            <h1 class="aboreto text-gold">SANCTUARY NOT FOUND</h1>
-            <p class="text-muted">You have no active bookings or your stay has already concluded.</p>
-            <a href="/" class="btn-premium-solid mt-4">Return Home</a>
+
+        <!-- Billing and Payment -->
+        <div class="billing-payment mb-5">
+            <h2 class="text-center text-warning">Billing and Payment</h2>
+            <hr style="border-color: #BFA75D;">
+            <ul class="list-unstyled">
+                <li><strong>Total Cost:</strong> Php {{ number_format($guest->price_total, 2) }}</li>
+                <li><strong>Paid Amount:</strong> Php {{ number_format($guest->price_total, 2) }}</li>
+            </ul>
         </div>
-        @endif
+
+        <!-- Service Feedback Section -->
+
+        <div class="services mb-5">
+    <h2 class="text-center text-primary mb-4">Avail Our Services for a Better Experience</h2>
+
+    <!-- Check if user is a guest -->
+
+    <div class="container mt-5">
+        <div class="card shadow-sm p-4" style="background-color: #2c3e50; border-radius: 15px;">
+            <h2 class="mb-4 text-warning">Select Service</h2>
+
+            <!-- Service Form -->
+            <form action="{{ route('services.submit') }}" method="POST">
+                @csrf
+
+                <!-- Hidden fields -->
+                <input type="hidden" name="booking_id" value="{{ $guest->booking_id }}">
+                <input type="hidden" name="name" value="{{ $guest->firstname }} {{ $guest->lastname }}">
+
+                <!-- Dropdown for services -->
+                <div class="mb-3">
+                    <label for="service" class="form-label text-light">Available Services:</label>
+                    <select name="service_id" id="service" class="form-select" aria-label="Select a service" required>
+                        <option value="" disabled selected>Select a service</option>
+                        @foreach($services as $service)
+                        <option value="{{ $service->service_id }}" data-price="{{ $service->price }}">
+                            {{ $service->service_name }} - Php {{ number_format($service->price, 2) }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Service Date -->
+                <div class="mb-3">
+                    <label for="service_date" class="form-label text-light">Service Date:</label>
+                    <input type="date" name="service_date" id="service_date" class="form-control" required>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="mb-3">
+                    <label for="payment_method" class="form-label text-light">Payment Method:</label>
+                    <select name="payment_method" id="payment_method" class="form-select" required>
+                        <option value="over_the_counter">Over the Counter</option>
+                        <option value="online_payment">Online Payment</option>
+                    </select>
+                </div>
+
+                <!-- Total Price -->
+                <div class="mb-3">
+                    <label for="total_price" class="form-label text-light">Total Price (Php):</label>
+                    <input type="number" name="total_price" id="total_price" class="form-control" required readonly>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-warning">Submit</button>
+                </div>
+            </form>
+        </div>
     </div>
-</section>
-@endsection
 
-@section('custom-js')
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const serviceSelect = document.getElementById('service');
-        const totalPriceInput = document.getElementById('total_price');
-        
-        if(serviceSelect) {
-            serviceSelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                totalPriceInput.value = selectedOption.getAttribute('data-price');
+    <!-- Availed Services Table -->
+    <div class="container mt-5">
+        <h2 class="text-warning text-center mb-4">Availed Services</h2>
+
+        <!-- Table for displaying availed services -->
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered" style="background-color: #34495e; color: #ecf0f1;">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Service Date</th>
+                        <th>Payment Method</th>
+                        <th>Total Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($guest->services as $service)
+                    <tr>
+                        <td>{{ $service->service->service_name ?? 'Service not found' }}</td>
+                        <td>{{ $service->service_date }}</td>
+                        <td class="text-center">
+                            <span class="badge {{ $service->payment_status == 'pending' ? 'bg-warning' : 'bg-success' }} text-white">
+                                {{ ucfirst($service->payment_status) }}
+                            </span>
+                        </td>
+                        <td>Php {{ number_format($service->total_price, 2) }}</td>
+                        <td>
+                            <form action="{{ route('service.destroy', $service->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                            </form>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" class="text-center text-dark">No services availed.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+
+        <!-- Stay Experience Feedback Form -->
+        <div class="stay-experience mb-5">
+            <h2 class="text-center text-warning">Stay Experience</h2>
+            <p class="text-center">Your feedback is valuable to us! Please share your thoughts and suggestions to help improve your experience with Laraveil Suites.</p>
+
+            <form action="{{ route('feedback.store') }}" method="POST" class="mb-4">
+                @csrf
+                <div class="mb-3">
+                    <textarea name="feedback" class="form-control" rows="5" placeholder="Describe your experience..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-center mb-4">
+                    <div class="form-check me-4">
+                        <input type="radio" name="anonymous" value="1" id="submit-anonymous" checked class="form-check-input">
+                        <label for="submit-anonymous" class="form-check-label">Submit Anonymously</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="radio" name="anonymous" value="0" id="show-my-name" class="form-check-input">
+                        <label for="show-my-name" class="form-check-label">Show My Name</label>
+                    </div>
+                </div>
+
+                <div class="rating">
+            <h2 class="rating-title">Rate your experience!</h2>
+            <div class="stars">
+                <input type="radio" name="rating" value="5" id="star5">
+                <label for="star5" class="star-label">&#9733;</label>
+
+                <input type="radio" name="rating" value="4" id="star4">
+                <label for="star4" class="star-label">&#9733;</label>
+
+                <input type="radio" name="rating" value="3" id="star3">
+                <label for="star3" class="star-label">&#9733;</label>
+
+                <input type="radio" name="rating" value="2" id="star2">
+                <label for="star2" class="star-label">&#9733;</label>
+
+                <input type="radio" name="rating" value="1" id="star1">
+                <label for="star1" class="star-label">&#9733;</label>
+            </div>
+        </div>
+                <input type="hidden" name="guest_id" value="{{ $guest->id }}">
+                <button type="submit" class="btn btn-success w-100">Submit</button>
+            </form>
+            <form method="POST" action="{{ route('logout') }}" class="d-inline">
+    @csrf
+    <button type="submit" class="nav-link btn btn-link p-2" style="color: red; text-decoration: none; border: solid red 1px;">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </button>
+  </form>
+        </div>
+    </div>
+
+    <script>
+        const stars = document.querySelectorAll('.rating input');
+        stars.forEach(star => {
+            star.addEventListener('change', () => {
+                const ratingValue = star.id.replace('star', '');
             });
-        }
-    });
-</script>
-@endsection
+        });
+
+        document.getElementById("service_date").value = new Date().toISOString().split('T')[0];
+
+        // Get the service select element
+        const serviceSelect = document.getElementById('service');
+
+        // Get the total price input field
+        const totalPriceInput = document.getElementById('total_price');
+
+        // Update total price when a service is selected
+        serviceSelect.addEventListener('change', function() {
+            // Get the selected option's data-price attribute
+            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+
+            // Set the total price field with the service price
+            totalPriceInput.value = price;
+        });
+    </script>
+@else($guest->booking_id == 404)
+    <p class="text-center text-warning">You have no active bookings or your stay has already concluded.</p>
+@endif
+</body>
+
+</html>

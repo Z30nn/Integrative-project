@@ -4,34 +4,43 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Guest;
-use App\Models\Service; // Don't forget to include the Service model
+use App\Models\Service;
 
 class BookingController extends Controller
 {
     public function showBooking(Request $request)
     {
-        // Get the booking ID from the query parameter
-        $bookingId = $request->query('bookingId'); // Get bookingId from the URL query string
+        // 1. Get the booking ID from the URL query or Request Header
+        // We REMOVED session('password') because REST APIs must be stateless.
+        $bookingId = $request->query('bookingId'); 
 
-        // Check if bookingId is empty
         if (empty($bookingId)) {
-            // Use the password from the session if bookingId is empty
-            $bookingId = session('password');
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Booking ID is required.'
+            ], 400);
         }
 
-        // Fetch the guest details using the booking ID
-        $guest = Guest::where('booking_id', $bookingId)->first();
-        $avail = Guest::where('booking_id', $bookingId)->with('services')->first();
+        // 2. Fetch guest details with relationships (Eager Loading)
+        $guest = Guest::where('booking_id', $bookingId)->with('services')->first();
 
-        // Fetch all services
-        $services = Service::all(); // Retrieve all services from the 'services' table
-
-        // Return the view with both guest details and the services
-        if ($guest) {
-            return view('categories.view_booking', compact('guest', 'services', 'avail'));
-        } else {
-            $guest = (object) ['booking_id' => 404]; // Create a guest object with 404 as the booking ID
-            return view('categories.view_booking', compact('guest', 'services'));
+        // 3. Handle "Not Found" with a proper API Status Code
+        if (!$guest) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Booking not found.',
+                'booking_id' => $bookingId
+            ], 404);
         }
+
+        // 4. Return JSON Data instead of a View
+        // This allows the same data to be used by a Website or a Mobile App.
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'guest_info' => $guest,
+                'available_services' => Service::all()
+            ]
+        ], 200);
     }
 }

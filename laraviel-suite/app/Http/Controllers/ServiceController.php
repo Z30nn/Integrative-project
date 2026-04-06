@@ -39,16 +39,12 @@ class ServiceController extends Controller
     if ($paymentStatus == 'paid') {
         $service = Service::where('service_id', $validatedData['service_id'])->first();
 
-        // Resolve service name safely
-        $serviceName = ($validatedData['service_id'] == 0) 
-            ? 'Room Booking' 
-            : ($service ? $service->service_name : 'Unknown Service');
-
         IncomeTracker::create([
             'customer_name' => $validatedData['name'],
             'booking_id' => $validatedData['booking_id'],
-            'availed_service' => $serviceName,
+            'availed_service' => $service->service_name,
             'price' => $validatedData['total_price'],
+            'payment_status'
         ]);
 
         // Redirect to the '/' route
@@ -70,43 +66,37 @@ public function markAsPaid($id, $booking_id)
         $availedService->payment_status = 'paid';
         $availedService->save();
 
+        // Get the service details using the service_id from AvailedService
         $service = Service::where('service_id', $availedService->service_id)->first();
-
-        // Resolve service name safely
-        $serviceName = ($availedService->service_id == 0) 
-            ? 'Room Booking' 
-            : ($service ? $service->service_name : 'Unknown Service');
 
         // Create an entry in IncomeTracker
         IncomeTracker::create([
             'customer_name' => $availedService->guest_name,
             'booking_id' => $booking_id,
-            'availed_service' => $serviceName,  // Store the resolved service name
+            'availed_service' => $service->service_name,  // Store only the service name
             'price' => $availedService->total_price,
         ]);
-
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment status updated to paid.',
-                'new_status' => 'Paid'
-            ]);
-        }
     }
 
     // Redirect back to the previous page (or wherever you need to)
     return redirect()->back()->with('success', 'Payment status updated to paid.');
 }
-    public function destroy($id)
-    {
-        try {
-            $availedService = AvailedService::findOrFail($id);
-            $availedService->delete();
-            return redirect()->back()->with('success', 'Service record deleted successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Service not found or error occurred.');
-        }
+public function destroy($id)
+{
+    // Find the service record by ID
+    $availedService = AvailedService::find($id);
+
+    if ($availedService) {
+        // Delete the service record
+        $availedService->delete();
+
+        // Redirect back with a success message
+        return redirect()->back()->with('success', 'Service deleted successfully.');
     }
+
+    // If the service does not exist, redirect back with an error message
+    return redirect()->back()->with('error', 'Service not found.');
+}
 
 public function refund($id)
 {
@@ -116,14 +106,9 @@ public function refund($id)
     if ($availedService) {
         // If the payment status is 'paid', remove the corresponding entry in IncomeTracker
         if ($availedService->payment_status == 'paid') {
-            // Resolve the service name safely
-            $serviceName = ($availedService->service_id == 0) 
-                ? 'Room Booking' 
-                : ($availedService->service ? $availedService->service->service_name : 'Unknown Service');
-
-            // Find matching IncomeTracker record by name and guest name
+            // Get the corresponding IncomeTracker record
             $incomeTracker = IncomeTracker::where('customer_name', $availedService->guest_name)
-                                          ->where('availed_service', $serviceName)
+                                          ->where('availed_service', $availedService->service->service_name)
                                           ->where('price', $availedService->total_price)
                                           ->first();
 
@@ -137,20 +122,8 @@ public function refund($id)
         $availedService->payment_status = 'Refunded';
         $availedService->save();
 
-        if (request()->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment status updated to refunded.',
-                'new_status' => 'Refunded'
-            ]);
-        }
-
         // Redirect back with a success message
         return redirect()->back()->with('success', 'Payment status updated to refunded, and income tracker entry removed.');
-    }
-
-    if (request()->ajax()) {
-        return response()->json(['success' => false, 'message' => 'Service not found.'], 404);
     }
 
     // If the service does not exist, redirect back with an error message
@@ -170,19 +143,15 @@ public function update(Request $request, $id)
     // Find and update service
     $roomService = Service::where('service_id', $id)->firstOrFail();
 
+    $roomService->update([
+        'service_name' => $request->service_name,
+        'availed_service' => $request->availed_service,
+        'description' => $request->description,
+        'price' => $request->price,
+    ]);
+
     // Redirect back with a success message
-    try {
-        $roomService->service_name = $request->service_name;
-        $roomService->availed_service = $request->availed_service;
-        $roomService->description = $request->description;
-        $roomService->price = $request->price;
-        
-        $roomService->save();
-        return redirect()->back()->with('success', 'Service updated successfully.');
-    } catch (\Exception $e) {
-        \Illuminate\Support\Facades\Log::error('Error updating service: ' . $e->getMessage());
-        return redirect()->back()->with('error', 'There was an error updating the service: ' . $e->getMessage());
-    }
+    return redirect()->back()->with('approved', 'Service updated successfully.');
 }
 
 //delete a service
@@ -195,7 +164,7 @@ public function delete($id)
         // If the service is found, delete it
         if ($service) {
             $service->delete();
-            return redirect()->back()->with('success', 'Service deleted successfully.');
+            return redirect()->back()->with('approved', 'Service deleted successfully.');
         } else {
             return redirect()->back()->with('error', 'Service not found.');
         }

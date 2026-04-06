@@ -118,24 +118,6 @@ return [
             'replace_placeholders' => true,
         ],
 
-        // ── API Request Log Channel ─────────────────────────────────────
-        'api' => [
-            'driver'              => 'daily',
-            'path'                => storage_path('logs/api.log'),
-            'level'               => 'debug',
-            'days'                => 30,
-            'replace_placeholders'=> true,
-        ],
-
-        // ── Activity Log Channel ─────────────────────────────────────
-        'activity' => [
-            'driver'              => 'daily',
-            'path'                => storage_path('logs/activity.log'),
-            'level'               => 'info',
-            'days'                => 30,
-            'replace_placeholders'=> true,
-        ],
-
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,
