@@ -32,9 +32,9 @@ class RegisteredUserController extends Controller
         // Validate the incoming request
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255'],
-            'role' => ['string', 'max:255'],  // assuming you're passing role
-            'password' => ['required', 'string', 'min:6'], // Validate password as a string
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', 'string', 'in:super_admin,admin,cashier,guest'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
         // Create the user with booking ID stored in password
@@ -48,15 +48,22 @@ class RegisteredUserController extends Controller
         // Trigger the Registered event
         event(new Registered($user));
 
-            Auth::login($user);
+        // Check if an Admin is adding an employee or a guest is registering
+        if (Auth::check() && Auth::user()->role === 'admin') {
+            return redirect(route('admin', absolute: false))->with('success', "Employee {$user->name} successfully added!");
+        }
+
+        Auth::login($user);
 
         // Redirect based on the role
-        if ($user->role == 'admin') {
+        if ($user->role == 'super_admin' || $user->role == 'admin') {
             return redirect(route('admin', absolute: false));
         } elseif ($user->role == 'cashier') {
             return redirect(route('cashier', absolute: false));
         } elseif ($user->role == 'guest') {
-            return redirect(route('view-booking', absolute: false)); // guest route (example)
+            return redirect(route('view-booking', absolute: false));
         }
+
+        return redirect(route('landing', absolute: false));
     }
 }

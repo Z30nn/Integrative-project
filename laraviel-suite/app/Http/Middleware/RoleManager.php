@@ -14,45 +14,26 @@ class RoleManager
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // 1. Check if the user is authenticated via the API guard
-        if (!Auth::check()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Unauthorized: Please provide a valid JWT token.'
-            ], 401);
+        if(!Auth::check()){
+            return redirect()->route('login');
         }
 
-        $authUserType = Auth::user()->role;
+        $userRole = Auth::user()->role;
 
-        // 2. Validate the specific role required for the route
-        switch($role) {
-            case 'admin':
-                if($authUserType === 'admin') {
-                    return $next($request);
-                }
-                break;
-                
-            case 'cashier':
-                if($authUserType === 'cashier') {
-                    return $next($request);
-                }
-                break;
-
-            case 'guest':
-                if($authUserType === 'guest') {
-                    return $next($request);
-                }
-                break;
+        // Check if user's role is in the allowed roles list
+        if (in_array($userRole, $roles)) {
+            return $next($request);
         }
 
-        // 3. If the role does not match, return a Forbidden JSON response
-        // In a RESTful API, we do not redirect. We tell the client they are forbidden.
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Forbidden: You do not have [' . $role . '] permissions to access this resource.',
-            'user_role' => $authUserType
-        ], 403);
+        // Redirect to appropriate dashboard based on their role
+        if ($userRole === 'admin') {
+            return redirect()->route('admin');
+        } elseif ($userRole === 'cashier') {
+            return redirect()->route('cashier');
+        }
+
+        return redirect()->route('landing');
     }
 }

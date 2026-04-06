@@ -14,25 +14,30 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run(): void
-{
-    // Admin
-    \App\Models\User::updateOrCreate(
-        ['email' => 'admin@gmail.com'], // The unique check
-        [
-            'name' => 'admin',
-            'role' => 'admin',
-            'password' => Hash::make('password'),
-        ]
-    );
+    {
+        DB::table('users')->insert([
+            'name' => 'Super Admin',
+            'email' => 'superadmin@laraviel.com',
+            'role' => 'super_admin',
+            'password' => Hash::make('SuperAdmin@12345'),
+        ]);
 
-    // Cashier
-    \App\Models\User::updateOrCreate(
-        ['email' => 'cashier@gmail.com'],
-        [
+        DB::table('users')->insert([
+            'name' => 'admin',
+            'email' => 'admin@laraviel.com',
+            'role' => 'admin',
+            'password' => Hash::make('Admin@12345'),
+        ]);
+
+        DB::table('users')->insert([
             'name' => 'cashier',
+            'email' => 'cashier@laraviel.com',
             'role' => 'cashier',
-            'password' => Hash::make('password'),
-        ]
-    );
-}
+            'password' => Hash::make('Cashier@12345'),
+        ]);
+
+        $this->call([
+            RoomPriceSeeder::class,
+        ]);
+    }
 }
