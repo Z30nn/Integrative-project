@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('feedback', function (Blueprint $table) {
-            $table->id();
-            $table->text('feedback');
-            $table->integer('rating');
-            $table->boolean('anonymous')->default(false);
-            $table->foreignId('guest_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('feedback')) {
+            Schema::create('feedback', function (Blueprint $table) {
+                $table->id();
+                $table->text('feedback');
+                $table->integer('rating');
+                $table->boolean('anonymous')->default(false);
+                $table->foreignId('guest_id')->constrained()->onDelete('cascade');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

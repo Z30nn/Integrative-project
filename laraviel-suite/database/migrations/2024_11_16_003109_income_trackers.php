@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('income_trackers', function (Blueprint $table) {
-            $table->id();
-            $table->string("customer_name");
-            $table->string("availed_service");
-            $table->decimal("price", 10, 2);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('income_trackers')) {
+            Schema::create('income_trackers', function (Blueprint $table) {
+                $table->id();
+                $table->string("customer_name");
+                $table->string("availed_service");
+                $table->decimal("price", 10, 2);
+                $table->timestamps();
+            });
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\GuestApiController;
 use App\Http\Controllers\Api\ServiceApiController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Api\ErpReportApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,5 +69,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/cashier-stats', [DashboardApiController::class, 'cashierIndex'])
             ->middleware('role.api:cashier,admin')
             ->name('api.cashier.stats');
+
+        // ── ERP Reports (homegrown core) ───────────────────────────────
+        Route::prefix('erp')->group(function () {
+            Route::get('/reports/revenue', [ErpReportApiController::class, 'revenue'])
+                ->name('api.erp.reports.revenue');
+            Route::get('/stock/rooms', [ErpReportApiController::class, 'stockRooms'])
+                ->name('api.erp.stock.rooms');
+            Route::get('/invoices/{bookingId}', [ErpReportApiController::class, 'invoice'])
+                ->name('api.erp.invoices.show');
+        });
     });
 });

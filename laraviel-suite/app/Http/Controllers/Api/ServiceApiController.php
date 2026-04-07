@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use App\Models\AvailedService;
 use App\Services\ActivityLogger;
+use App\Services\ErpInvoicingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -76,6 +77,9 @@ class ServiceApiController extends Controller
     {
         $service = AvailedService::findOrFail($id);
         $service->update(['payment_status' => 'Paid']);
+
+        // Populate ERP payments/invoice lines (non-breaking, guarded).
+        ErpInvoicingService::syncInvoiceForAvailedServicePayment($service);
 
         ActivityLogger::log('service.paid', "Service #{$id} marked as paid", AvailedService::class, $id);
 

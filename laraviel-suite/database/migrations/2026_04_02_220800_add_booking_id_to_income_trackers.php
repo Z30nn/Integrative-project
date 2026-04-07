@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('income_trackers', function (Blueprint $table) {
-            $table->string('booking_id')->after('id')->nullable();
-        });
+        if (!Schema::hasColumn('income_trackers', 'booking_id')) {
+            Schema::table('income_trackers', function (Blueprint $table) {
+                $table->string('booking_id')->after('id')->nullable();
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('income_trackers', function (Blueprint $table) {
-            $table->dropColumn('booking_id');
-        });
+        if (Schema::hasColumn('income_trackers', 'booking_id')) {
+            Schema::table('income_trackers', function (Blueprint $table) {
+                $table->dropColumn('booking_id');
+            });
+        }
     }
 };
