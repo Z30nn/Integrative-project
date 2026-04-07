@@ -151,54 +151,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // ── Step Navigation ────────────────────────
-    const switchStep = (step) => {
-        // Validation for step 1
-        if (step === 2 && (!checkInDate || !checkOutDate)) {
-            alert("Please select your Timeline first.");
-            return;
-        }
-
-        // Validation for step 2
-        if (step === 3 && selectedRooms.length === 0) {
-            alert("Please select at least one Suite.");
-            return;
-        }
-
-        // Validation for step 3
-        if (step === 4) {
-            const reqFields = ["firstname", "lastname", "email", "contactNumber", "address"];
-            const isComplete = reqFields.every(id => document.getElementById(id).value.trim() !== "");
-            if (!isComplete) {
-                alert("Please complete the Resident Profile.");
-                return;
-            }
-        }
-
-        // Processing payment (transition from 4 to 5)
-        if (step === 5) {
-            // Show processing
-            const paymentForms = document.querySelectorAll(".payment-form");
-            paymentForms.forEach(el => el.classList.add("d-none"));
-            if(document.getElementById("paymentMethodSelect")) document.getElementById("paymentMethodSelect").classList.add("d-none");
-            const labels = document.querySelectorAll("#step-4-content label");
-            labels.forEach(el => el.classList.add("d-none"));
-            
-            const processingNode = document.getElementById("paymentProcessing");
-            if(processingNode) processingNode.classList.remove("d-none");
-            
-            const stepNav = document.getElementById("step-navigation");
-            if(stepNav) stepNav.classList.add("d-none");
-            
-            setTimeout(() => {
-                submitBooking();
-                renderSwitch(5);
-            }, 2000);
-            return;
-        }
-
-        renderSwitch(step);
-    };
-
     const renderSwitch = (step) => {
         currentStep = step;
 
@@ -241,6 +193,66 @@ document.addEventListener("DOMContentLoaded", function () {
                 easing: 'easeOutCubic'
             });
         }
+    };
+
+    const restorePaymentStepUI = () => {
+        const processingNode = document.getElementById("paymentProcessing");
+        if (processingNode) processingNode.classList.add("d-none");
+        document.querySelectorAll(".payment-form").forEach((el) => el.classList.remove("d-none"));
+        const pm = document.getElementById("paymentMethodSelect");
+        if (pm) pm.classList.remove("d-none");
+        document.querySelectorAll("#step-4-content label").forEach((el) => el.classList.remove("d-none"));
+        const stepNav = document.getElementById("step-navigation");
+        if (stepNav) stepNav.classList.remove("d-none");
+        renderSwitch(4);
+    };
+
+    const switchStep = (step) => {
+        if (step === 2 && (!checkInDate || !checkOutDate)) {
+            alert("Please select your Timeline first.");
+            return;
+        }
+
+        if (step === 3 && selectedRooms.length === 0) {
+            alert("Please select at least one Suite.");
+            return;
+        }
+
+        if (step === 4) {
+            const reqFields = ["firstname", "lastname", "email", "contactNumber", "address"];
+            const isComplete = reqFields.every(id => document.getElementById(id).value.trim() !== "");
+            if (!isComplete) {
+                alert("Please complete the Resident Profile.");
+                return;
+            }
+        }
+
+        if (step === 5) {
+            const paymentForms = document.querySelectorAll(".payment-form");
+            paymentForms.forEach(el => el.classList.add("d-none"));
+            if(document.getElementById("paymentMethodSelect")) document.getElementById("paymentMethodSelect").classList.add("d-none");
+            const labels = document.querySelectorAll("#step-4-content label");
+            labels.forEach(el => el.classList.add("d-none"));
+
+            const processingNode = document.getElementById("paymentProcessing");
+            if(processingNode) processingNode.classList.remove("d-none");
+
+            const stepNav = document.getElementById("step-navigation");
+            if(stepNav) stepNav.classList.add("d-none");
+
+            setTimeout(() => {
+                submitBooking()
+                    .then(() => renderSwitch(5))
+                    .catch((err) => {
+                        console.error(err);
+                        alert(err.message || 'Booking could not be completed. Please try again.');
+                        restorePaymentStepUI();
+                    });
+            }, 2000);
+            return;
+        }
+
+        renderSwitch(step);
     };
 
     if (document.getElementById("nextBtn")) {
@@ -395,43 +407,59 @@ document.addEventListener("DOMContentLoaded", function () {
             paymentStatus: 'pending'
         };
 
-        const greeting = document.querySelector(".greeting");
-        if (greeting) greeting.innerText = `Welcome, ${guestData.salutation} ${guestData.lastname}`;
+        const csrf = document.querySelector('meta[name="csrf-token"]');
+        if (!csrf || !csrf.getAttribute("content")) {
+            return Promise.reject(new Error("Security token missing. Please refresh the page."));
+        }
 
-        const confirmationBox = document.querySelector(".guest-info1");
-        if (confirmationBox) {
-            confirmationBox.innerHTML = `
+        return fetch("/submit-guest-info", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-TOKEN": csrf.getAttribute("content")
+            },
+            body: JSON.stringify(guestData)
+        })
+        .then(async (res) => {
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const msg = body.message
+                    || (body.errors ? Object.values(body.errors).flat().join(" ") : null)
+                    || `Request failed (${res.status})`;
+                throw new Error(msg);
+            }
+            if (body.errors) {
+                throw new Error(Object.values(body.errors).flat().join(" "));
+            }
+
+            const greeting = document.querySelector(".greeting");
+            if (greeting) greeting.innerText = `Welcome, ${guestData.salutation} ${guestData.lastname}`;
+
+            const confirmationBox = document.querySelector(".guest-info1");
+            if (confirmationBox) {
+                confirmationBox.innerHTML = `
                 <div class="mb-2"><strong>Account:</strong> ${guestData.lastname}, ${guestData.firstname}</div>
                 <div class="mb-2"><strong>Arrival:</strong> ${guestData.checkIn}</div>
                 <div class="mb-2"><strong>Departure:</strong> ${guestData.checkOut}</div>
                 <div class="mb-2"><strong>Suites:</strong> ${guestData.bookedRooms}</div>
             `;
-        }
-        
-        const totPriceEl = document.querySelector(".total-price");
-        if(totPriceEl) totPriceEl.innerText = `₱${totalPrice.toLocaleString()}`;
-
-        fetch("/submit-guest-info", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
-            },
-            body: JSON.stringify(guestData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.errors) console.error(data.errors);
-            else {
-                console.log("Success:", data);
-                // Success animation
-                anime({
-                    targets: '.greeting',
-                    scale: [0.9, 1],
-                    duration: 1000,
-                    easing: 'easeOutElastic(1, .8)'
-                });
             }
+
+            const totPriceEl = document.querySelector(".total-price");
+            if (totPriceEl) totPriceEl.innerText = `₱${Number(guestData.priceTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+            if (body.mail_sent === false) {
+                alert("Your booking was saved, but the confirmation email could not be sent. Check your spam folder, verify your mail settings, or contact the hotel.");
+            }
+
+            console.log("Success:", body);
+            anime({
+                targets: '.greeting',
+                scale: [0.9, 1],
+                duration: 1000,
+                easing: 'easeOutElastic(1, .8)'
+            });
         });
     };
 
