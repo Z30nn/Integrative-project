@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\RoomApiController;
 use App\Http\Controllers\Api\GuestApiController;
 use App\Http\Controllers\Api\ServiceApiController;
 use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\BookingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -26,6 +27,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/refresh', [AuthApiController::class, 'refresh'])->middleware('auth:api')->name('refresh');
         Route::get('/me',       [AuthApiController::class, 'me'])->middleware('auth:api')->name('me');
     });
+
+    // ── Guest portal lookup (stateless JSON when requested) ─────────────
+    // GET /api/v1/booking?bookingId=BK-123
+    Route::get('/booking', [BookingController::class, 'showBooking'])->name('api.booking.show');
 
     // ── Protected Routes (JWT required) ──────────────────────────────────
     Route::middleware(['auth:api', 'api.log'])->group(function () {

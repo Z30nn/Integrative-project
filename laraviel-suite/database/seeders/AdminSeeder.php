@@ -11,7 +11,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         // Admin user
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'admin@laraviel.com'],
             [
                 'name'     => 'Admin',
@@ -22,7 +22,7 @@ class AdminSeeder extends Seeder
         );
 
         // Cashier user
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'cashier@laraviel.com'],
             [
                 'name'     => 'Cashier',
