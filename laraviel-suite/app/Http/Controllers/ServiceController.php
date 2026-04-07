@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\AvailedService;
 use App\Models\IncomeTracker;
 use App\Models\Service;
+use App\Services\ErpInvoicingService;
 
 class ServiceController extends Controller
 {
@@ -85,6 +86,9 @@ public function markAsPaid($id, $booking_id)
             'price' => $availedService->total_price,
         ]);
 
+        // Populate ERP payments/invoice lines (non-breaking, guarded).
+        ErpInvoicingService::syncInvoiceForAvailedServicePayment($availedService);
+
         if (request()->ajax()) {
             return response()->json([
                 'success' => true,
@@ -136,6 +140,9 @@ public function refund($id)
         // Update the payment status to 'Refunded'
         $availedService->payment_status = 'Refunded';
         $availedService->save();
+
+        // Populate ERP payments/invoice lines (non-breaking, guarded).
+        ErpInvoicingService::syncInvoiceForAvailedServicePayment($availedService);
 
         if (request()->ajax()) {
             return response()->json([

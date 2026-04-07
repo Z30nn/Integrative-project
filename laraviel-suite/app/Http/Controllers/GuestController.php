@@ -11,6 +11,7 @@ use App\Mail\SendReceipt;  // Use your SendReceipt Mailable
 use App\Models\Feedback;
 use App\Models\User;
 use App\Models\AvailedService;
+use App\Services\ErpInvoicingService;
 
 class GuestController extends Controller
 {
@@ -107,6 +108,9 @@ class GuestController extends Controller
                 'booking_id' => $validatedData['bookingId'],
             ]);
         }
+
+        // Populate homegrown ERP invoices/payments (non-breaking, guarded by table checks).
+        ErpInvoicingService::syncInvoiceForGuest($guest);
 
         User::firstOrCreate(
             ['email' => $validatedData['email']],
@@ -231,6 +235,9 @@ class GuestController extends Controller
                 'price' => $validatedData['price_total'],
             ]);
         }
+
+        // Keep ERP invoice totals in sync with updated guest pricing.
+        ErpInvoicingService::syncInvoiceForGuest($guest);
     
         return redirect()->back()->with('guestAlert', 'Guest information updated successfully.');
     }
@@ -244,6 +251,9 @@ class GuestController extends Controller
         try {
             $guest = Guest::findOrFail($id);
             $bookingId = $guest->booking_id;
+
+            // Clean up ERP records first (best-effort).
+            ErpInvoicingService::deleteInvoiceForBooking($bookingId);
             
             // Clean up related history
             AvailedService::where('booking_id', $bookingId)->delete();

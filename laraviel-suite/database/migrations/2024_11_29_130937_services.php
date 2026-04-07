@@ -11,14 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('services', function (Blueprint $table) {
-            $table->id("service_id");
-            $table->string("service_name");
-            $table->string("availed_service");
-            $table->text("description");
-            $table->decimal("price", 10, 2);
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('services')) {
+            Schema::create('services', function (Blueprint $table) {
+                $table->id("service_id");
+                $table->string("service_name");
+                $table->string("availed_service");
+                $table->text("description");
+                $table->decimal("price", 10, 2);
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -26,7 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cache');
-        Schema::dropIfExists('cache_locks');
+        Schema::dropIfExists('services');
     }
 };

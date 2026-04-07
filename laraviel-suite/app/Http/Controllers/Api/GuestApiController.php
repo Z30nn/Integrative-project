@@ -8,6 +8,7 @@ use App\Models\Guest;
 use App\Models\IncomeTracker;
 use App\Models\User;
 use App\Services\ActivityLogger;
+use App\Services\ErpInvoicingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -100,6 +101,10 @@ class GuestApiController extends Controller
             'availed_service'=> 'Booking Reservation',
         ]);
 
+        // Create/update homegrown ERP invoice for this API-created booking.
+        // The current system records IncomeTracker immediately, so we mark the invoice as "paid".
+        ErpInvoicingService::syncRoomBookingFromGuest($guest, 'paid');
+
         User::firstOrCreate(['email' => $validated['email']], [
             'name'     => $validated['firstname'],
             'role'     => 'guest',
@@ -136,6 +141,10 @@ class GuestApiController extends Controller
 
         $guest->update($validated);
 
+        // Keep ERP invoice totals in sync with updated guest pricing.
+        // API flow records IncomeTracker immediately, so we keep the invoice marked as paid.
+        ErpInvoicingService::syncRoomBookingFromGuest($guest, 'paid');
+
         ActivityLogger::log('guest.updated', "Guest {$guest->booking_id} updated", Guest::class, $guest->id);
 
         return response()->json([
@@ -152,6 +161,10 @@ class GuestApiController extends Controller
     {
         $guest = Guest::findOrFail($id);
         $bookingId = $guest->booking_id;
+
+        // Best-effort ERP cleanup.
+        ErpInvoicingService::deleteInvoiceForBooking($bookingId);
+
         $guest->delete();
 
         ActivityLogger::log('guest.deleted', "Guest {$bookingId} deleted", Guest::class, $id);
