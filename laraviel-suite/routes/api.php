@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\RoomApiController;
 use App\Http\Controllers\Api\GuestApiController;
 use App\Http\Controllers\Api\ServiceApiController;
 use App\Http\Controllers\Api\DashboardApiController;
+use App\Http\Controllers\Api\IntegrationApiController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Api\ErpReportApiController;
 use Illuminate\Support\Facades\Route;
@@ -78,6 +79,16 @@ Route::prefix('v1')->group(function () {
                 ->name('api.erp.stock.rooms');
             Route::get('/invoices/{bookingId}', [ErpReportApiController::class, 'invoice'])
                 ->name('api.erp.invoices.show');
+        });
+
+        // ── Integration Monitoring (internal EAI) ───────────────────────
+        Route::prefix('integration')->middleware('role.api:admin')->group(function () {
+            Route::get('/health', [IntegrationApiController::class, 'health'])
+                ->name('api.integration.health');
+            Route::get('/messages', [IntegrationApiController::class, 'messages'])
+                ->name('api.integration.messages');
+            Route::post('/messages/{id}/retry', [IntegrationApiController::class, 'retry'])
+                ->name('api.integration.retry');
         });
     });
 });

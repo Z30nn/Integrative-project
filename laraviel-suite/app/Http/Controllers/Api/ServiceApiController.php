@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\AvailedService;
 use App\Services\ActivityLogger;
 use App\Services\ErpInvoicingService;
+use App\Services\IntegrationBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -80,6 +81,19 @@ class ServiceApiController extends Controller
 
         // Populate ERP payments/invoice lines (non-breaking, guarded).
         ErpInvoicingService::syncInvoiceForAvailedServicePayment($service);
+
+        IntegrationBus::publish(
+            'billing',
+            'service.paid',
+            [
+                'availed_service_id' => $service->id,
+                'booking_id' => $service->booking_id,
+                'amount' => (float) $service->total_price,
+            ],
+            'availed_service',
+            (string) $service->id,
+            'service.paid|' . $service->id . '|paid'
+        );
 
         ActivityLogger::log('service.paid', "Service #{$id} marked as paid", AvailedService::class, $id);
 

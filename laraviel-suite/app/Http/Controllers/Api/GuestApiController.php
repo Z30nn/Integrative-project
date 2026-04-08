@@ -9,6 +9,7 @@ use App\Models\IncomeTracker;
 use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\ErpInvoicingService;
+use App\Services\IntegrationBus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -113,6 +114,20 @@ class GuestApiController extends Controller
 
         // Fire event — listeners handle email + room availability update via queue
         event(new BookingCreated($guest, $validated));
+
+        // Publish integration event into internal outbox pipeline (EAI).
+        IntegrationBus::publish(
+            'booking',
+            'booking.created',
+            [
+                'booking_id' => $guest->booking_id,
+                'guest_id' => $guest->id,
+                'price_total' => (float) $guest->price_total,
+            ],
+            'guest',
+            (string) $guest->id,
+            'booking.created|' . $guest->booking_id
+        );
 
         ActivityLogger::log('guest.created', "Guest {$guest->booking_id} created", Guest::class, $guest->id);
 
