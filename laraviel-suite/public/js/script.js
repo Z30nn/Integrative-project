@@ -9,11 +9,33 @@ document.addEventListener("DOMContentLoaded", function () {
     let calMonth = new Date().getMonth();
 
     // ── Pre-fetch Elevation ────────────────────
-    const fetchRooms = () => {
+    const fetchRooms = (checkIn = null, checkOut = null) => {
         const container = document.querySelector(".standard-room");
         if (!container) return;
 
-        fetch("/rooms")
+        const onBookNowFlow = Boolean(document.getElementById("stepper"));
+        if (onBookNowFlow && (!checkIn || !checkOut)) {
+            container.innerHTML =
+                '<div class="col-12 text-center py-5 text-gold opacity-50">Select your check-in and check-out dates to see suites available for your stay.</div>';
+            selectedRooms = [];
+            updateSummary();
+            document.querySelectorAll(".select-room-btn").forEach((b) => {
+                b.innerText = "Select";
+                b.classList.replace("btn-light", "btn-premium-solid");
+            });
+            return;
+        }
+
+        let url = "/rooms";
+        if (checkIn && checkOut) {
+            if (onBookNowFlow) {
+                selectedRooms = [];
+                updateSummary();
+            }
+            url += `?check_in=${encodeURIComponent(checkIn)}&check_out=${encodeURIComponent(checkOut)}`;
+        }
+
+        fetch(url)
             .then(res => {
                 if (!res.ok) throw new Error("Network response was not ok");
                 return res.json();
@@ -23,7 +45,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (loader) loader.remove();
 
                 if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="col-12 text-center py-5 text-gold opacity-50">No sanctuaries available at this moment.</div>';
+                    container.innerHTML = '<div class="col-12 text-center py-5 text-gold opacity-50">No sanctuaries available for your selected dates.</div>';
+                    selectedRooms = [];
+                    updateSummary();
                     return;
                 }
 
@@ -98,15 +122,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                 });
 
-                // Auto-select room from URL
+                // Auto-select room from URL (only if still available for chosen dates)
                 const urlParams = new URLSearchParams(window.location.search);
                 const preselectRoomId = urlParams.get('room_id');
                 if (preselectRoomId && document.getElementById("stepper")) {
                     const preselectBtn = document.querySelector(`.select-room-btn[data-id="${preselectRoomId}"]`);
                     if (preselectBtn) {
                         preselectBtn.click();
-                        // Jump to Step 2 to show their selection
-                        setTimeout(() => switchStep(2), 500); 
+                        setTimeout(() => switchStep(2), 500);
                     }
                 }
             })
@@ -313,6 +336,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById("checkOutdd").innerText = "-- -- ----";
                     document.querySelectorAll(".clickable-day").forEach(d => d.classList.remove("active-cell"));
                     this.classList.add("active-cell");
+                    if (document.getElementById("stepper")) {
+                        const nInput = document.getElementById("totalNightsInput");
+                        if (nInput) nInput.value = 0;
+                        const nDisplay = document.querySelector(".nights");
+                        if (nDisplay) nDisplay.textContent = "Select Dates";
+                        updateSummary();
+                        fetchRooms(checkInDate, checkOutDate);
+                    }
                 } else {
                     if (new Date(date) < new Date(checkInDate)) {
                         checkInDate = date;
@@ -343,6 +374,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if(nInput) nInput.value = nights;
             
             updateSummary();
+
+            if (document.getElementById("stepper")) {
+                fetchRooms(checkInDate, checkOutDate);
+            }
         }
     };
 
@@ -464,17 +499,17 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     // ── Initialization ─────────────────────────
-    fetchRooms();
-    
     if (document.getElementById("currentMonthCalendar")) {
-        // Auto-select today
         const today = new Date();
         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
         checkInDate = todayStr;
-        
+
         const checkInEl = document.getElementById("checkIndd");
         if (checkInEl) checkInEl.innerText = todayStr;
 
         renderCalendars();
+        fetchRooms(checkInDate, checkOutDate);
+    } else {
+        fetchRooms(checkInDate, checkOutDate);
     }
 });
