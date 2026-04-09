@@ -2,18 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Guest;
 use App\Models\Room;
+use Illuminate\Http\Request;
+
 class RoomController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * Optional query: check_in, check_out (Y-m-d) — excludes rooms already booked for any overlapping stay.
      */
-    public function index()
+    public function index(Request $request)
 {
     try {
-        // Fetch all rooms with the associated price details (only fetching price from RoomPrices)
-        $rooms = Room::with('price:id,price')->get();
+        $query = Room::with('price:id,price');
+
+        if ($request->filled(['check_in', 'check_out'])) {
+            $validated = $request->validate([
+                'check_in' => 'required|date',
+                'check_out' => 'required|date|after:check_in',
+            ]);
+
+            $checkIn = $validated['check_in'];
+            $checkOut = $validated['check_out'];
+
+            $occupiedRoomTypes = Guest::query()
+                ->where('check_in', '<', $checkOut)
+                ->where('check_out', '>', $checkIn)
+                ->pluck('booked_rooms')
+                ->flatMap(fn ($csv) => collect(explode(',', (string) $csv))->map(fn ($t) => trim($t))->filter())
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($occupiedRoomTypes !== []) {
+                $query->whereNotIn('room_type', $occupiedRoomTypes);
+            }
+        }
+
+        $rooms = $query->get();
 
         // Format the response to include room_price_id and price
         $roomsData = $rooms->map(function ($room) {
