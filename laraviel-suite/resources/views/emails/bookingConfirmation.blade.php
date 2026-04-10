@@ -112,23 +112,23 @@
             <table class="details-table">
                 <tr>
                     <td>Booking ID</td>
-                    <td>{{ $guest['bookingId'] }}</td>
+                    <td>{{ $guest['booking_id'] }}</td>
                 </tr>
                 <tr>
                     <td>Check-in Date</td>
-                    <td>{{ $guest['checkIn'] }}</td>
+                    <td>{{ $guest['check_in'] }}</td>
                 </tr>
                 <tr>
                     <td>Check-out Date</td>
-                    <td>{{ $guest['checkOut'] }}</td>
+                    <td>{{ $guest['check_out'] }}</td>
                 </tr>
                 <tr>
                     <td>Reserved Suites</td>
-                    <td>{{ $guest['bookedRooms'] }}</td>
+                    <td>{{ $guest['booked_rooms'] }}</td>
                 </tr>
                 <tr>
                     <td>Total Investment</td>
-                    <td>₱{{ number_format($guest['priceTotal'], 2) }}</td>
+                    <td>₱{{ number_format($guest['price_total'], 2) }}</td>
                 </tr>
             </table>
 
@@ -141,11 +141,11 @@
                 </tr>
                 <tr>
                     <td>Secure Password</td>
-                    <td>{{ $guest['bookingId'] }}</td>
+                    <td>{{ $guest['booking_id'] }}</td>
                 </tr>
             </table>
 
-            <a href="{{ env('APP_URL') . '/view-booking?bookingId=' . $guest['bookingId'] }}" class="button">Access Guest Portal</a>
+            <a href="{{ env('APP_URL') . '/view-booking?bookingId=' . $guest['booking_id'] }}" class="button">Access Guest Portal</a>
         </div>
 
         <div class="footer">

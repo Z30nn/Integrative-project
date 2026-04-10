@@ -49,6 +49,7 @@ Route::post('/feedback', [FeedbackController::class, 'store'])->name('feedback.s
 Route::get('/rooms', [RoomController::class, 'index']);
 Route::post('/submit-guest-info', [GuestController::class, 'store']);
 Route::post('/services/submit', [ServiceController::class, 'submit'])->name('services.submit');
+Route::get('/payment/success', [GuestController::class, 'paymentSuccess'])->name('payment.success');
 
 /*
 |--------------------------------------------------------------------------
