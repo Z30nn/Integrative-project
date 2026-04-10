@@ -2,18 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Guest;
 use App\Models\Room;
+use Illuminate\Http\Request;
+
 class RoomController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * Optional query: check_in, check_out (Y-m-d) — excludes rooms already booked for any overlapping stay.
      */
-    public function index()
+    public function index(Request $request)
 {
     try {
-        // Fetch all rooms with the associated price details (only fetching price from RoomPrices)
-        $rooms = Room::with('price:id,price')->get();
+        $query = Room::with('price:id,price');
+
+        if ($request->filled(['check_in', 'check_out'])) {
+            $validated = $request->validate([
+                'check_in' => 'required|date',
+                'check_out' => 'required|date|after:check_in',
+            ]);
+
+            $checkIn = $validated['check_in'];
+            $checkOut = $validated['check_out'];
+
+            $occupiedRoomTypes = Guest::query()
+                ->where('check_in', '<', $checkOut)
+                ->where('check_out', '>', $checkIn)
+                ->pluck('booked_rooms')
+                ->flatMap(fn ($csv) => collect(explode(',', (string) $csv))->map(fn ($t) => trim($t))->filter())
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($occupiedRoomTypes !== []) {
+                $query->whereNotIn('room_type', $occupiedRoomTypes);
+            }
+        }
+
+        $rooms = $query->get();
 
         // Format the response to include room_price_id and price
         $roomsData = $rooms->map(function ($room) {
@@ -68,7 +96,7 @@ class RoomController extends Controller
         if ($request->hasFile('image')) {
             $roomImageName = 'room_' . time() . '.' . $request->file('image')->extension();
             $request->file('image')->move(public_path('images/roomImage'), $roomImageName);
-            $imagePath = './images/roomImage/' . $roomImageName;
+            $imagePath = 'images/roomImage/' . $roomImageName;
         }
 
         // Create a new room and associate the price ID (not the price itself)
@@ -81,9 +109,10 @@ class RoomController extends Controller
 
         // Log data to check the insertion
 
-        return redirect()->route('rooms.index')->with('success', 'Room added successfully!');
+        return redirect()->route('admin')->with('success', 'Room added successfully!');
     } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'There was an error adding the room.');
+        \Illuminate\Support\Facades\Log::error('Error adding room: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'There was an error adding the room: ' . $e->getMessage());
     }
 }
 
@@ -126,13 +155,13 @@ public function update(Request $request, $id)
     // Check if an image is uploaded
     if ($request->hasFile('image')) {
         // Generate a unique name for the image, including the room ID
-        $roomImageName = 'room_' .time(). '.' . $request->file('image')->extension();
-        echo $roomImageName;
-        // Move the uploaded image to the 'public/images' folder
+        $roomImageName = 'room_' . time() . '.' . $request->file('image')->extension();
+        
+        // Move the uploaded image to the 'public/images/roomImage' folder
         $request->file('image')->move(public_path('images/roomImage'), $roomImageName);
 
-        // Get the path to the uploaded image
-        $imagePath = './images/roomImage/' . $roomImageName;
+        // Standardized path storage
+        $imagePath = 'images/roomImage/' . $roomImageName;
 
         // Update the room's image path
         $room->image_path = $imagePath;

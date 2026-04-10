@@ -25,8 +25,17 @@ class RoomPriceSeeder extends Seeder
         ];
 
         foreach ($roomPrices as $roomPrice) {
-            DB::table('room_prices')->insert([
+            $priceId = DB::table('room_prices')->insertGetId([
                 'price' => $roomPrice['price'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('rooms')->insert([
+                'room_type' => $roomPrice['room_type'],
+                'description' => 'A luxurious ' . $roomPrice['room_type'] . ' featuring premium amenities and stunning views.',
+                'image_path' => '/images/rooms/' . strtolower(str_replace(' ', '_', $roomPrice['room_type'])) . '.jpg',
+                'room_price_id' => $priceId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

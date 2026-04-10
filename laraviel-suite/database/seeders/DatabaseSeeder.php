@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -15,17 +14,35 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
-            'name' => 'admin',
-            'email' => 'admin@gmail.com',
-            'role' => 'admin',
-            'password' => Hash::make('password'),
-        ]);
-        DB::table('users')->insert([
-            'name' => 'cashier',
-            'email' => 'cashier@gmail.com',
-            'role' => 'cashier',
-            'password' => Hash::make('password'),
+        User::updateOrCreate(
+            ['email' => 'superadmin@laraviel.com'],
+            [
+                'name' => 'Super Admin',
+                'role' => 'super_admin',
+                'password' => Hash::make('SuperAdmin@12345'),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'admin@laraviel.com'],
+            [
+                'name' => 'admin',
+                'role' => 'admin',
+                'password' => Hash::make('Admin@12345'),
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'cashier@laraviel.com'],
+            [
+                'name' => 'cashier',
+                'role' => 'cashier',
+                'password' => Hash::make('Cashier@12345'),
+            ]
+        );
+
+        $this->call([
+            RoomPriceSeeder::class,
         ]);
     }
 }
