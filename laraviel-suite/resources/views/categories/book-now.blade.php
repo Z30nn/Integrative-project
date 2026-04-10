@@ -441,6 +441,7 @@
                                 <label class="luxury-label">Payment Type</label>
                                 <select class="form-control luxury-input mb-4" id="paymentMethodSelect">
                                     <option value="over_the_counter">Pay at Counter</option>
+                                    <option value="paymongo">Online Payment (GCash, Maya, Card)</option> </select>
                                 </select>
                             </div>
                         </div>
@@ -451,6 +452,15 @@
                                 <i class="bi bi-wallet2 text-gold mb-3" style="font-size: 3rem;"></i>
                                 <h4 class="text-gold aboreto">Pay Upon Arrival</h4>
                                 <p class="text-cream opacity-75">Your reservation will be secured, and payment will be collected at the front desk during check-in. Your booking status will be pending until then.</p>
+                            </div>
+                        </div>
+
+                        <!-- Pay via PayMongo -->
+                        <div id="paymongoPaymentForm" class="payment-form d-none">
+                            <div class="glass-card p-4 text-center">
+                                <i class="bi bi-credit-card text-gold mb-3" style="font-size: 3rem;"></i>
+                                <h4 class="text-gold aboreto">Pay via PayMongo</h4>
+                                <p class="text-cream opacity-75">You will be redirected to a secure payment gateway to complete your transaction via GCash, Maya, or Credit Card. Once paid, your booking will be confirmed automatically.</p>
                             </div>
                         </div>
 
@@ -470,10 +480,23 @@
                             <p class="text-cream opacity-75 mb-5 px-lg-5">Your sanctuary awaits. A detailed summary of your curated stay has been dispatched to your digital correspondence.</p>
                             
                             <div class="glass-card text-start mb-5 mx-auto" style="max-width: 500px;">
-                                <div class="guest-info1 text-cream opacity-75"></div>
+                                <div class="guest-info1 text-cream opacity-75">
+                                    @if(isset($paymentSuccess) && $paymentSuccess)
+                                    <div class="mb-2"><strong>Account:</strong> {{ $guest->lastname }}, {{ $guest->firstname }}</div>
+                                    <div class="mb-2"><strong>Arrival:</strong> {{ $guest->check_in }}</div>
+                                    <div class="mb-2"><strong>Departure:</strong> {{ $guest->check_out }}</div>
+                                    <div class="mb-2"><strong>Suites:</strong> {{ $guest->booked_rooms }}</div>
+                                @endif
+                                </div>
                                 <div class="summary-total mt-4 pt-4">
                                     <span class="small brand-font text-cream opacity-75 d-block">Grand Total</span>
-                                    <span class="total-price">Php 0.00</span>
+                                    <div class="total-price">
+                                        @if(isset($paymentSuccess) && $paymentSuccess)
+                                            ₱{{ number_format($guest->price_total, 2) }}
+                                        @else
+                                            <span class="totalPriceDisplay">₱0.00</span>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                             
@@ -514,7 +537,11 @@
 
                     <div class="summary-total">
                         <span class="small brand-font text-cream opacity-75 d-block" style="font-size: 0.6rem; letter-spacing: 4px;">Investment Total</span>
-                        <span class="totalPriceDisplay">Php 0.00</span>
+                        @if(isset($paymentSuccess) && $paymentSuccess)
+                            <span>₱{{ number_format($guest->price_total, 2) }}</span>
+                        @else
+                            <span class="totalPriceDisplay">Php 0.00</span>
+                        @endif
                     </div>
                     
                     <input type="hidden" id="totalNightsInput" value="0">

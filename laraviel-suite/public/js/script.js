@@ -168,8 +168,11 @@ document.addEventListener("DOMContentLoaded", function () {
         paymentMethodSelect.addEventListener('change', function(e) {
             document.querySelectorAll('.payment-form').forEach(el => el.classList.add('d-none'));
             if (e.target.value === 'over_the_counter') {
-                document.getElementById('counterPaymentForm').classList.remove('d-none');
-            }
+            document.getElementById('counterPaymentForm').classList.remove('d-none');
+                } 
+                else if (e.target.value === 'paymongo') {
+                    document.getElementById('paymongoPaymentForm').classList.remove('d-none');
+                }
         });
     }
 
@@ -424,8 +427,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ── Submission Logic ───────────────────────
+    // ── Submission Logic (Transformed for PayMongo) ───────────────────────
     const submitBooking = () => {
+        // 1. DYNAMIC SELECTION: Grab what the user actually picked from the dropdown
+        const selectedMethod = document.getElementById("paymentMethodSelect")?.value || 'over_the_counter';
+
         const guestData = {
             bookingId: Math.random().toString(36).substr(2, 9) + Date.now().toString(36),
             salutation: document.getElementById("salutation").value,
@@ -438,7 +444,7 @@ document.addEventListener("DOMContentLoaded", function () {
             checkOut: checkOutDate,
             bookedRooms: selectedRooms.map(r => r.type).join(", "),
             priceTotal: totalPrice,
-            paymentMethod: 'over_the_counter',
+            paymentMethod: selectedMethod, // Swapped static value for dynamic variable
             paymentStatus: 'pending'
         };
 
@@ -458,34 +464,39 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(async (res) => {
             const body = await res.json().catch(() => ({}));
+            
             if (!res.ok) {
                 const msg = body.message
                     || (body.errors ? Object.values(body.errors).flat().join(" ") : null)
                     || `Request failed (${res.status})`;
                 throw new Error(msg);
             }
-            if (body.errors) {
-                throw new Error(Object.values(body.errors).flat().join(" "));
+
+            // 2. THE REDIRECT BRIDGE: If PayMongo sent back a link, jump to it now
+            if (body.success && body.redirect_url) {
+                window.location.href = body.redirect_url;
+                return; // Stop here; the user is leaving the page to pay
             }
 
+            // 3. UI UPDATES: (Only runs if 'over_the_counter' or PayMongo didn't redirect)
             const greeting = document.querySelector(".greeting");
             if (greeting) greeting.innerText = `Welcome, ${guestData.salutation} ${guestData.lastname}`;
 
             const confirmationBox = document.querySelector(".guest-info1");
             if (confirmationBox) {
                 confirmationBox.innerHTML = `
-                <div class="mb-2"><strong>Account:</strong> ${guestData.lastname}, ${guestData.firstname}</div>
-                <div class="mb-2"><strong>Arrival:</strong> ${guestData.checkIn}</div>
-                <div class="mb-2"><strong>Departure:</strong> ${guestData.checkOut}</div>
-                <div class="mb-2"><strong>Suites:</strong> ${guestData.bookedRooms}</div>
-            `;
+                    <div class="mb-2"><strong>Account:</strong> ${guestData.lastname}, ${guestData.firstname}</div>
+                    <div class="mb-2"><strong>Arrival:</strong> ${guestData.checkIn}</div>
+                    <div class="mb-2"><strong>Departure:</strong> ${guestData.checkOut}</div>
+                    <div class="mb-2"><strong>Suites:</strong> ${guestData.bookedRooms}</div>
+                `;
             }
 
             const totPriceEl = document.querySelector(".total-price");
             if (totPriceEl) totPriceEl.innerText = `₱${Number(guestData.priceTotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
             if (body.mail_sent === false) {
-                alert("Your booking was saved, but the confirmation email could not be sent. Check your spam folder, verify your mail settings, or contact the hotel.");
+                alert("Your booking was saved, but the confirmation email could not be sent.");
             }
 
             console.log("Success:", body);
@@ -511,5 +522,17 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchRooms(checkInDate, checkOutDate);
     } else {
         fetchRooms(checkInDate, checkOutDate);
+    }
+
+    // ── NEW: Post-Payment Redirect Handler ─────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    // This checks if we are returning from the success route with a bookingId
+    if (urlParams.has('bookingId') && window.location.pathname.includes('/payment/success')) {
+        // We wait a tiny bit to ensure the UI is fully stable before switching
+        setTimeout(() => {
+            if (typeof renderSwitch === "function") {
+                renderSwitch(5);
+            }
+        }, 100);
     }
 });

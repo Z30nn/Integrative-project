@@ -121,27 +121,65 @@ class GuestController extends Controller
             ]
         );
 
+        // ... (existing code: User::firstOrCreate logic)
+
+        // 1. Check if the user chose PayMongo
+        if ($rawPaymentMethod === 'paymongo') {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Basic ' . base64_encode(config('services.paymongo.secret_key') . ':'),
+            ])->post('https://api.paymongo.com/v1/checkout_sessions', [
+                'data' => [
+                    'attributes' => [
+                        'send_email_receipt' => true,
+                        'payment_method_types' => ['gcash', 'paymaya', 'card'],
+                        'line_items' => [[
+                            'currency' => 'PHP',
+                            'amount' => (int)($validatedData['priceTotal'] * 100), // Convert to cents
+                            'description' => 'Sanctuary Reservation - ' . $validatedData['bookingId'],
+                            'name' => 'Room Booking',
+                            'quantity' => 1,
+                        ]],
+                        'success_url' => route('payment.success', ['bookingId' => $validatedData['bookingId']]),
+                        'cancel_url' => url()->previous(),
+                    ]
+                ]
+            ]);
+
+            $session = $response->json();
+
+            if (isset($session['data']['attributes']['checkout_url'])) {
+                // Exit here for PayMongo - we don't send the email yet!
+                return response()->json([
+                    'success' => true,
+                    'redirect_url' => $session['data']['attributes']['checkout_url'],
+                ], 200);
+            }
+        }
+
+        // 2. Flow for "Pay at Counter" (This only runs if NOT PayMongo)
         session(['password' => $validatedData['bookingId']]);
 
         $mailSent = false;
         try {
+            // We send the email immediately because they aren't going to a payment gateway
             Mail::to($guest->email)->send(new SendReceipt($validatedData));
             $mailSent = true;
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Booking confirmation email failed', [
                 'message' => $e->getMessage(),
                 'guest_email' => $guest->email,
-                'exception' => $e,
             ]);
         }
 
+        // Final Return for non-PayMongo users
         return response()->json([
             'message' => 'Guest information submitted successfully.',
             'mail_sent' => $mailSent,
             'data' => $guest,
         ], 201);
-    }
-
+    } // End of store function
     /**
      * Display the specified resource.
      */
@@ -242,7 +280,32 @@ class GuestController extends Controller
         return redirect()->back()->with('guestAlert', 'Guest information updated successfully.');
     }
 
+        public function paymentSuccess(Request $request)
+        {
+            $bookingId = $request->query('bookingId');    
+            $guest = Guest::where('booking_id', $bookingId)->firstOrFail();
 
+            // 1. Mark as paid in your DB
+            $guest->update(['payment_status' => 'paid']);
+
+            // 2. Add to Income Tracker (since it's now officially 'paid')
+            IncomeTracker::create([
+                'customer_name' => $guest->firstname . ' ' . $guest->lastname,
+                'price' => $guest->price_total,
+                'availed_service' => 'Room Booking',
+                'booking_id' => $guest->booking_id,
+            ]);
+
+            // 3. Send the Gmail now that the money is confirmed
+            // Note: We use the guest data for the receipt
+            Mail::to($guest->email)->send(new SendReceipt($guest->toArray()));
+
+            // 4. Show a nice "Thank You" view
+            return view('categories.book-now', [
+                    'guest' => $guest, 
+                    'paymentSuccess' => true
+                ]);
+        }
     /**
      * Remove the specified resource from storage.
      */
