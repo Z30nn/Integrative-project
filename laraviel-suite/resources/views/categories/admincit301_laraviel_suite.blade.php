@@ -734,7 +734,7 @@
 
   <!-- Edit Modals (Inner Body placement for valid HTML) -->
   @foreach($guests as $guest)
-  <div class="modal fade" id="editModal-{{ $guest->id }}" tabindex="-1" aria-labelledby="editModalLabel-{{ $guest->id }}" aria-hidden="true" style="z-index: 2000;">
+  <div class="modal fade" id="editModal-{{ $guest->id }}" tabindex="-1" aria-labelledby="editModalLabel-{{ $guest->id }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
@@ -841,6 +841,4 @@
   @endforeach
 
 </body>
-</html>
-
 </html>

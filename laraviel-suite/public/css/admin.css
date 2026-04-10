@@ -185,7 +185,6 @@ body::before {
   flex: 1;
   transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  z-index: 1;
   min-height: 100vh;
 }
 
@@ -678,6 +677,15 @@ body::before {
 }
 
 /* ── Modals ───────────────────────────────────────────────────── */
+/* Ensure modals and backdrops layer correctly regardless of parent stacking context */
+.modal {
+  z-index: 1055 !important;
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
 .modal-content {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border-gold) !important;
